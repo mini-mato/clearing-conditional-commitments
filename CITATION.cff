@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you cite this working paper, please use the metadata below."
+title: "Clearing Conditional Commitments: Privacy, Specification, and Custody in a Clearinghouse for Interdependent Action"
+type: generic
+authors:
+  - family-names: Miano
+    given-names: Timothy J.
+    affiliation: "Affiliate, Massachusetts Institute of Technology; Founder & CEO, Proffer Futures, Inc."
+    email: timmiano@mit.edu
+date-released: 2026-06-11
+version: "1.0 (working draft v1)"
+url: "https://github.com/mini-mato/clearing-conditional-commitments"
+keywords:
+  - conditional commitment
+  - coordination
+  - information design
+  - k-anonymity
+  - market design
+  - assurance contracts
+  - mechanism design
+abstract: >-
+  Latent willingness of the form "I will, if enough of the right others will"
+  has no standard clearing institution. We model a conditional-commitment
+  clearinghouse: a platform that authenticates participants, verifies that
+  their mutual conditions are jointly satisfiable, routes compatible
+  counterparts to one another, and chooses three design dials — custody of
+  principal, specification timing, and disclosure granularity — before
+  activating the coalition at a fixed point. The central result is that the
+  welfare-maximizing clearinghouse is minimal on all three dials at once: it
+  holds no principal, fixes terms late, and discloses progress only through a
+  k-anonymized aggregate. Three further results discipline the disclosure
+  claim, covering the information-leakage cost of screening, a
+  refinement-free selection under risk dominance, and the structural reason
+  partial masking is constrained-optimal. JEL: C72, D82, D47, H41.
