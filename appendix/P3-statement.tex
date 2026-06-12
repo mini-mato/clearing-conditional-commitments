@@ -1,0 +1,99 @@
+% ------------------------------------------------------------------
+% P3 statement (main-text include): compact assumptions, Proposition
+% \ref{prop:bundle} parts (i)-(iii), Conjecture \ref{conj:interiorT},
+% Observation \ref{obs:leakagehelps}, Conjecture \ref{conj:decoupledT},
+% and the one-sentence falsification pointer. No proofs here; full
+% setup, lemmas, proofs, and the falsification record are in
+% appendix/P3-proof.tex.
+%
+% NOTE: this file and P3-proof.tex both carry \label{prop:bundle} and
+% the conjecture/observation labels -- include exactly one of the two
+% labeled statements in a given document (or strip labels from one).
+% Requires amsthm environments: proposition, assumption, conjecture,
+% observation.
+% ------------------------------------------------------------------
+
+\begin{assumption}\label{ass:bundle}
+In the activation game $\Gamma_T(k_{\mathrm{type}},k_{\mathrm{piv}})$ (setup M1--M6 in the
+appendix; bundled dial $k_{\mathrm{type}}=k_{\mathrm{piv}}=k$):
+\textup{(A0)} regularity: $N\ge 2$; $K\in\{2,\dots,N\}$; $p_{\mathrm{opp}}\in(0,1)$;
+$0<\kappa<V$; $L>0$; $L_p>0$; $\rho\ge 0$; $\pi_b\in(0,1)$; $\xi\in(0,1]$.
+\textup{(A1)} pessimistic pooling: $0\le\mathbb E<\kappa$, where
+$\mathbb E:=(1-\pi_b)V-\pi_b L$.
+\textup{(A2)} free-ride regime: $\varepsilon:=\xi V-(V-\kappa)>0$, i.e.\ $\xi>1-\kappa/V$, so
+the gate $\chi=1$.
+\textup{(A3)} thin root field: $K-1\ge p_{\mathrm{opp}}N$, so $\mathrm{piv}(0)=0$.
+\textup{(A4)} pivotal ignition at full type-news: with $X\sim\mathrm{Binom}(N-1,
+p_{\mathrm{opp}})$ and $\beta_1=\Pr(X=K-1)$, $\beta_+=\Pr(X\ge K)$, $\beta_-=\Pr(X\le K-2)$:
+$(V-\kappa)\,\beta_1>\varepsilon\,\beta_++L_p\,\beta_-$.
+\textup{(A5)} small waiting friction: $\rho\,(T-1)<\min\{L_p,\;\kappa-\mathbb E\}$ (vacuous at
+$T=1$).
+\end{assumption}
+
+\begin{proposition}[bundled-dial interior optimum; decoupled-dial corner]\label{prop:bundle}
+\leavevmode
+\begin{itemize}
+\item[(i)] \textbf{Bundled dial: both corners dead, a live interior, every optimum interior.}
+\emph{Endpoints (any horizon).} Under A0, A1, A2, A3, A5, for every $T\ge 1$, the bundled game
+satisfies
+\[
+G(0)=0,\ \ s(0)=1,\qquad G(1)=0,\ \ s(1)=1,\quad\text{hence}\quad W(0)=W(1)=0 .
+\]
+($k=0$: pooled news cannot ignite momentum --- the unique stage equilibrium is $q=0$ at every
+state; $k=1$: full pivotality leakage makes the empty state absorbing --- every root-state mover
+free-rides.)
+\emph{Interior (one round).} If in addition A4 holds and $T=1$, there is a threshold
+$\bar k\in(0,1)$ --- the unique root of the affine root-state differential $D_1$ of the
+appendix ignition lemma --- such that for every $k\in[\bar k,1)$:
+\begin{gather*}
+G(k)=\Pr\!\big(\mathrm{Binom}(N,\;p_{\mathrm{opp}}(1-k))\ge K\big)>0,\qquad s(k)=1,\\
+W(k)=(1-\pi_b)\,V\,G(k)>0 .
+\end{gather*}
+Moreover $W:[0,1]\to\mathbb R$ is upper semicontinuous, attains its maximum, and \textbf{every
+maximizer lies in the open interval $(0,1)$}.
+\item[(ii)] \textbf{Decoupled dials: the optimum is the corner.} Under A0--A5 and $T=1$, the
+decoupled welfare satisfies, for all $(k_{\mathrm{type}},k_{\mathrm{piv}})\in[0,1]^2$,
+\[
+W(k_{\mathrm{type}},k_{\mathrm{piv}})\;\le\;W(1,0)\;=\;(1-\pi_b)\,V\,
+\Pr\!\big(\mathrm{Binom}(N,p_{\mathrm{opp}})\ge K\big)\;>\;0,
+\]
+and the argmax set is \textbf{exactly} $[\bar k,1]\times\{0\}$ (with $\bar k$ from part (i)):
+every optimum has \emph{zero} pivotality leakage and \emph{full ignition}, and
+$(k_{\mathrm{type}},k_{\mathrm{piv}})=(1,0)$ attains the optimum. In particular every point
+with $k_{\mathrm{piv}}>0$ is strictly suboptimal.
+\item[(iii)] \textbf{The interior is a constrained optimum created by bundling.} Under A0--A5
+and $T=1$: $\sup_{k\in[0,1]}W(k,k)\le W(1,0)$, and the bundled diagonal never attains $W(1,0)$
+(every diagonal point has $a_{\mathrm{eff}}<1$). The bundled optimum is interior (part (i))
+while the unconstrained two-dial optimum is the corner (part (ii)); the interior $k^*$ is the
+constrained optimum of one dial forced to move both channels together --- not a
+type-versus-pivotality balance.
+\end{itemize}
+\end{proposition}
+
+\begin{conjecture}[general-horizon interior]\label{conj:interiorT}
+Under A0--A3, A5, and a strengthened ignition condition, for every $T\ge 1$ there exists
+$k\in(0,1)$ with $G(k)>0$ in the bundled game. (Proved at $T=1$; open for $T\ge 2$.)
+\end{conjecture}
+
+\begin{observation}[positive leakage can strictly help at $T\ge 2$]\label{obs:leakagehelps}
+There exist instances satisfying A0--A5, horizons $T\ge 2$, and dials
+$k_{\mathrm{type}}\in[0,1]$, $k_{\mathrm{piv}}>0$ such that
+$W(k_{\mathrm{type}},k_{\mathrm{piv}})>W(k_{\mathrm{type}},0)$ with $s\equiv 1$ at both
+points: positive pivotality leakage is strictly welfare-improving, through the good-coalition
+continuation/waiting-option channel. At $T=1$ this is impossible
+(Proposition~\ref{prop:bundle}(ii)), so the phenomenon is strictly dynamic. (Verified
+instance in the appendix.)
+\end{observation}
+
+\begin{conjecture}[narrowed residual conjecture: decoupled argmax retains $k_{\mathrm{piv}}=0$]\label{conj:decoupledT}
+Under A0--A5, for every $T\ge 1$ the decoupled welfare attains its maximum at some point with
+$k_{\mathrm{piv}}=0$ --- with no claim that $(1,0)$ attains it, and no pointwise dominance
+claim in $k_{\mathrm{piv}}$. (Theorem at $T=1$ by Proposition~\ref{prop:bundle}(ii); open for
+$T\ge 2$.)
+\end{conjecture}
+
+The original general-horizon decoupled-corner conjecture --- that under A0--A5 the decoupled
+argmax has $k_{\mathrm{piv}}=0$ and is attained at $(1,0)$ for every $T\ge 1$ --- was falsified
+in verification by an explicit A0--A5 counterexample at $T\in\{2,5,10\}$; the falsification
+record, counterexample parameters, and replication notes appear in the appendix
+(Remark~\ref{rem:falsifiedC2}).

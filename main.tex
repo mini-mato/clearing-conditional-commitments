@@ -1,0 +1,593 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.15in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[round]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
+\usepackage{microtype}
+
+% ---------- theorem environments ----------
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{observation}{Observation}
+\newtheorem*{restatedproposition}{Restatement}
+\newtheorem*{restatedconjecture}{Restatement}
+\newtheorem*{restatedobservation}{Restatement}
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% Manual-tag assumption blocks used inside appendix proofs (drafts carry
+% their own per-proposition assumption labels A1..An).
+\newenvironment{assumptionlist}{\begin{description}}{\end{description}}
+
+\newcommand{\pim}{\pi_{\mathrm{m}}}
+\newcommand{\pir}{\pi_{\mathrm{r}}}
+\newcommand{\popp}{p_{\mathrm{opp}}}
+\newcommand{\ktype}{k_{\mathrm{type}}}
+\newcommand{\kpiv}{k_{\mathrm{piv}}}
+
+\title{Clearing Conditional Commitments:\\
+\large Privacy, Specification, and Custody in a Clearinghouse for Interdependent Action\thanks{%
+Preliminary working draft (v1, June 2026). Comments welcome. The numerical companion --- a
+chain of nine verified ``toy model'' memos, the solver scripts, and the adversarial
+verification logs --- is available from the author. All errors are mine.}}
+\author{Timothy J. Miano\thanks{Affiliate, Massachusetts Institute of Technology; and Founder \& CEO, Proffer Futures, Inc. Contact: \texttt{timmiano@mit.edu}. \emph{Disclosure:} the author holds equity in Proffer Futures, Inc., which operates the ifwishlist platform discussed in Section~9.}}
+\date{June 2026 --- preliminary and incomplete}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Latent willingness of the form ``I will, if enough of the right others will'' has no
+standard clearing institution. We model a \emph{conditional-commitment clearinghouse}: a platform
+that authenticates participants (accuracy $q$), verifies that their mutual conditions are
+jointly satisfiable (consensus integrity $c$), routes compatible counterparts to one another,
+and chooses three design dials --- custody of principal $\gamma$, specification timing
+$\sigma$, and disclosure granularity $k$ --- before activating the coalition at a fixed
+point. Our central result is that the welfare-maximizing clearinghouse is \emph{minimal on
+all three dials at once}: it holds no principal, fixes terms late, and discloses progress
+only through a $k$-anonymized aggregate. The result is stated with its boundary: it holds in
+a bounded high-authenticity, intermediate-integrity region, reverses on each axis outside
+it, and the three minimalisms are coupled in welfare magnitude rather than additively
+separable. Three further results discipline the disclosure claim. First, the privacy dial's
+screening cost is a genuine information-leakage object --- the Shannon mutual information
+between coalition type and the $k$-anonymized support count --- and full disclosure does not
+perfectly screen. Second, the masking advantage survives a refinement-free selection: under
+Carlsson--van~Damme risk dominance no rationality parameter appears anywhere in the
+model, the revealed game's contested-regime collapse is exact, and masked momentum is
+sustained --- proven at the deadline rung and for the smallest coalitions, conjecture-gated
+(and grid-verified) at interior rungs. Third, partial
+masking is \emph{constrained-optimal for a structural reason}: a single disclosure dial
+necessarily bundles ``this coalition is real'' with ``you are not pivotal,'' so --- in a
+one-round theorem extended by a dynamic calibration --- the interior optimum exists even
+where the unconstrained ideal would be full type-disclosure with zero pivotality leakage. We state three formal propositions with complete proofs, enumerate the
+open conjectures, and propose an administrable safe-harbor rule keyed to the mechanism's
+structure.\\[4pt]
+\textbf{JEL:} C72, D82, D47, H41.\quad
+\textbf{Keywords:} conditional commitment, coordination, information design, $k$-anonymity,
+market design, assurance contracts.
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}\label{sec:intro}
+
+\subsection{The vocabulary, fixed first}
+
+The broad problem family is \emph{interdependent action}: situations where each
+participant's willingness to act depends on who else will act, in what number, under what
+terms, and with what visibility. Collective action, collective consumption, assurance,
+focal-point coordination, and matching and scheduling are subcases --- the family is broad,
+and we will not pretend any one branch is the genus.
+
+The economic object this paper introduces is the \emph{conditional commitment}: ``I will,
+if a qualifying composition of others will.'' Not a pledge (a scalar added to a total), but
+a node with edges --- a private commitment whose condition refers to the \emph{composition}
+of the committing set: rosters, roles, types, compound thresholds.
+
+The institution that makes the object clearable is the \emph{conditional-commitment
+clearinghouse}: private conditional commitments are collected, checked for joint
+satisfiability, and activated at the moment the edge-constraints are simultaneously
+satisfied --- a fixed point whose output is common knowledge of a feasible coalition. It
+clears commitments, not prices. Markets clear goods; this institution clears conditional
+commitments --- and in doing so makes previously unclearable interdependent action
+actionable.
+
+\subsection{The friction: why the clearinghouse never existed}
+
+Conditional willingness has always existed. No institution cleared it because four barriers
+stood at once, and removing any three does not open the institution:
+credibility (``I would'' is cheap talk; signals are forgeable), compatibility (mutual
+conditions may not be jointly satisfiable --- is there a real coalition, or sixty unrelated
+``ifs''?), discoverability (compatible counterparts cannot find each other), and legality
+(turning activation into value movement can trigger custody, transmission, or liability
+regimes). The institution's non-existence was overdetermined: each wall alone is fatal. The
+thesis is that the four walls are now jointly removable for the first time --- credibility
+and discoverability by algorithmic inference at scale, compatibility by a mechanism-design
+move, legality by a legal-architecture move.
+
+\subsection{The contribution}
+
+Three results, in increasing order of surprise.
+
+\emph{First, a clearable primitive.} We formalize the conditional commitment as a graph
+object --- nodes, compositional edge-constraints, a fixed-point activation event --- and
+show that a pledge-threshold mechanism is its scalar degenerate case
+(Section~\ref{sec:model}).
+
+\emph{Second, one central result, three minimalisms.} In a single welfare objective over custody
+$\gamma$, specification $\sigma$, and disclosure $k$, the joint optimum is the minimal
+corner on all three axes together --- no custody, fuzzy-early specification, partial
+masking --- in a bounded high-$q$, intermediate-$c$ region, reversing off it on each axis
+(Section~\ref{sec:central}). The efficient clearinghouse clears \emph{because} it
+withholds.
+
+\emph{Third, the disclosure dial decomposed.} The privacy dial controls two channels with
+opposite signs --- type/screening (favoring disclosure) and pivotality/protection (favoring
+masking) --- and because one physical dial bundles them, partial masking is
+constrained-optimal even where the unconstrained ideal is full type-disclosure
+(Sections~\ref{sec:dial}--\ref{sec:selection}). The screening cost of masking is quantified
+by an actual information measure, and the protection advantage survives a refinement-free
+equilibrium selection (with the momentum bound conjecture-gated at interior rungs, as the
+proposition statement discloses). Proposition~\ref{prop:band} establishes the interior masking band in
+integrity; Proposition~\ref{prop:selection} the refinement-free selection;
+Proposition~\ref{prop:bundle} the bundled-dial structure of partial masking.
+
+The displacement claim in one line: prior work either fixes the good, conditions on a sum,
+or treats common knowledge as exogenous; we endogenize the good, the coalition membership,
+and the disclosure boundary, and then clear relational conditional commitments.
+
+% =====================================================================
+\section{Related literature}\label{sec:lit}
+
+Six lineages bracket the contribution; none contains it.
+
+\paragraph{Collective action and provision points.}
+\citet{olson1965logic} names the free-rider problem but offers no clearing institution.
+\citet{bagnoli1989provision} and the assurance-contract mechanisms of
+\citet{tabarrok1998private} fix the good ex ante and condition on a \emph{scalar}
+threshold; we endogenize the good's terms and make the condition \emph{relational}
+(compositional edge-constraints). \citet{marxmatthews2000dynamic} is the direct dynamic
+ancestor --- an observable running total as the Markov coordinating state in voluntary
+contribution --- and supplies the completion structure, but contains no disclosure-design
+result. \citet{halac2020raising} reach unique implementation through contingent
+\emph{payments} to heterogeneous investors over a scalar threshold: the transfer route to
+the destination our disclosure route reaches.
+
+\paragraph{Coordination and common knowledge.}
+Schelling's focal points and \citet{chwe2001rational} explain when coordination succeeds
+given common knowledge; we \emph{manufacture} common knowledge as a service, with
+endogenous membership. The global-games selection machinery we draw on is
+\citet{carlsson1993global} and \citet{frankelmorrispauzner2003equilibrium}. We cite the
+latter's \S6.4 for the criterion's pedigree, not as a blanket license: where the stage game
+has strategic complementarities, their \S6.4/Theorem~4 identifies the Laplacian
+(uniform-belief) action as the noise-independent selection; at the pivotal (diagonal)
+states that drive our result the stage game is a volunteer's dilemma --- commit and wait
+are strategic \emph{substitutes} there --- which falls outside the licensed class, so at
+those states we adopt the Laplacian action as the \emph{definition} of stagewise risk
+dominance, cross-validated by an independent $\lambda$-free potential-maximizer refinement
+(Proposition~\ref{prop:selection} and its Appendix~\ref{app:P2} scoping).
+
+\paragraph{Information design.}
+\citet{morris2002social} and \citet{cornand2008publicity} establish that public disclosure
+precision can flip welfare; \citet{li2023global} studies obfuscation directly. In all
+three, precision is a Gaussian noise parameter on a fundamental --- not a quantified
+privacy-mechanism leakage measure, and there is no coalition screening rate.
+\citet{kamenica2011bayesian}, \citet{bergemann2019information},
+\citet{morris2024implementation}, and \citet{inostroza2025adversarial} supply the
+persuasion, BCE, and adversarial-selection toolkit over payoff states: lineage, not
+preemption. \citet{vosooghi2017information} is nearest by setting --- information design
+inside coalition formation --- but the lever is beliefs about a scalar social-cost state,
+not a privacy mechanism; its published dynamic extension
+\citep{vosooghi2022information} has a third-party sender choosing threshold revelation of
+a scalar fundamental to a single coalition, with no privacy mechanism over participant
+structure and no screening rate. \citet{halac2021rank} is the closest
+privacy-as-instrument neighbor (rank uncertainty defeating strategic uncertainty in team
+production), with no quantified leakage primitive. \citet{chen2023stability} is the
+matching-side precedent for stability being information-structure-relative, with pairwise
+types and no disclosure welfare sign-flip.
+
+\paragraph{Crowdfunding and matching.} The crowdfunding design literature
+\citep{strausz2017crowdfunding,ellman2019optimal,belleflamme2014crowdfunding} studies
+all-or-nothing thresholds and moral hazard over a \emph{fixed} good with a scalar target;
+matching with contracts \citep{hatfield2005matching} clears relational structure but over
+fixed contract terms with no disclosure design. Both condition on what we endogenize.
+
+\paragraph{Market design.}
+The program of \citet{roth1999redesign,roth2002engineer} --- designing clearing
+institutions for market-like environments that did not previously clear --- is the lineage
+we claim membership in. \citet{weyl2018radical} is nearest in ambition, distinct in
+object: we clear non-transferable conditional commitments, not assets or votes.
+
+\paragraph{The new ingredient,} absent from each lineage by construction, is a
+\emph{quantified privacy-leakage primitive} (the mutual information between coalition type
+and a $k$-anonymized support count) \emph{driving a coalition screening rate}, joined to a
+difficulty-keyed masking advantage. That conjunction is the contribution.
+
+% =====================================================================
+\section{The environment}\label{sec:model}
+
+$N$ agents; one latent outcome whose terms are not yet fixed. Each agent $i$ holds a
+private type and a conditional commitment $c_i = $ ``act if composition $S_i$ of others
+commits.'' A resolver authenticates nodes with accuracy $q$. A router surfaces the outcome
+to compatible agents. Coalitions are of two types, good (deliverable) and bad (illusory),
+with prior $\pi_b$ on bad; consensus integrity $c$ indexes the probability that the posted
+conditional structure is jointly satisfiable.
+
+The platform chooses three dials:
+\begin{itemize}
+\item \textbf{Custody} $\gamma \in [0,1]$ --- the fraction of principal held at commitment
+time, carrying a trust-liability cost $c_{\mathrm{cust}}\gamma$ and deadweight $d_\gamma$,
+against a possible commitment-device benefit $\beta_\gamma$ that can lower the effective
+activation cutoff.
+\item \textbf{Specification} $\sigma \in [0,1]$ --- how early the outcome's terms harden.
+Precise-early kills latent commitments via the compatibility factor
+$\mathrm{comp}(\sigma)$; fuzzy-too-long adds indeterminacy cost $\mathrm{indet}(\sigma)$.
+The outcome's terms may be an \emph{endogenous output} co-resolved by the committed set:
+scheduling-by-coalition is the clean instance, where the date is selected by the coalition
+rather than fixed before the coalition exists.
+\item \textbf{Disclosure} $k \in [0,1]$ --- the granularity of progress disclosure,
+implemented as a $k$-anonymity dial on the support count (additive blur
+$r(k) = \mathrm{round}((1-k)N)$).
+\end{itemize}
+
+Activation occurs when the edge-constraints are simultaneously satisfiable --- the fixed
+point --- after which campaign terms harden and value, where present, moves on the
+recipient's own rail (the platform holds nothing). The welfare objective of the unified
+numerical model is
+\begin{equation}\label{eq:W}
+W(\gamma,\sigma,k;\,q,c) \;=\;
+\mathrm{comp}(\sigma)\,\bigl(1-\rho_{\mathrm{eff}}(k,\gamma,c)\bigr)\,
+\bigl(V-\mathrm{indet}(\sigma)\bigr)\,(1-d_\gamma\gamma)
+\;-\;\bigl(1-\mathrm{comp}(\sigma)\bigr)\bigl(1-s(k)\bigr)L
+\;-\;c_{\mathrm{cust}}\gamma,
+\end{equation}
+where $\rho_{\mathrm{eff}}$ is the effective unraveling risk and $s(k)$ the bad-coalition
+screening rate. We solve for when an activatable coalition forms --- the fixed point exists
+\emph{and is selected} --- and for the dial setting that maximizes welfare: coalitions that
+should form, do; spurious ones do not.
+
+\paragraph{Reduced-form status.} The unified objective \eqref{eq:W}, the revealed game's
+pivotality blend, and the bundled-dial channel coupling are disciplined reduced-form
+primitives, not objects derived from a Bayesian extensive form; the appendices state this
+where each is used, and each appendix's local model is self-contained (local symbols are
+local). The conclusions most robust to this level of abstraction are the structural ones
+--- the two-channel decomposition, the bundling constraint, the regime splits; the
+quantitative surfaces are measurement targets (Section~\ref{sec:empirics}).
+
+% =====================================================================
+\section{The central result: minimal is optimal}\label{sec:central}
+
+\begin{theorem}[informal; numerically established]\label{thm:minimal}
+In a bounded high-authenticity, intermediate-integrity region, and under a bounded
+custody-benefit, the welfare-maximizing clearinghouse reduces custody, specification, and
+disclosure together: the joint optimum $(\gamma^*,\sigma^*,k^*)$ of \eqref{eq:W} is
+$\gamma^*=0$ (no custody), $\sigma^*=0$ (fuzzy-early), and $k^*<1$ (partial masking). The
+optimum reverses off the region on each axis. The three dials are coupled in welfare
+magnitude --- quasi-separable in threshold structure, not additively separable --- with
+specification$\times$disclosure the leading interaction.
+\end{theorem}
+
+Each apparent weakness does real work. The clearinghouse clears precisely because it
+withholds: holding principal adds a trust liability the clearing does not require; forcing
+terms early kills latent commitments before the coalition can form; revealing granular
+pivotal state can unravel the conditional consensus it is meant to advertise.
+
+Theorem~\ref{thm:minimal} is established numerically (a restricted static disclosure facet
+is the part proven analytically, as Proposition~\ref{prop:band} below); four qualifiers travel with
+it. \emph{Region, not everywhere}: the joint-all-minimal bands are $c\in[0.66,0.72]$ at
+$q=0.95$ and $c\in[0.64,0.74]$ at $q=1.0$, and the region requires $q \gtrsim 0.95$; the
+masking band in $c$ is an interior band --- transparency wins below it (screening
+dominates) and, for $q<1$, above it (at $q=1$ with the reference parameters the upper
+closure fails and masking persists toward $c=1$, Appendix~\ref{app:P1}). \emph{Coupled, not separable}:
+the three-dimensional joint argmax equals the product of one-dimensional argmaxes in only
+221 of 600 parameter draws; the welfare cost of the separable policy is typically small
+(median $0.43\%$) with a real tail ($p_{95}=92\%$). \emph{Custody-minimalism is the
+bounded claim}: $\gamma^*=0$ holds only when the commitment-device benefit is small
+($\beta_\gamma \ge 0.25$ flips it), the qualifier \citet{diamond1984delegated} already
+suggests. \emph{Minimal disclosure means partial masking}: the optimal dial is an interior
+$k$-anonymity level, not a blackout; and the \emph{dynamic} (live progress-bar) version of
+the masking advantage is a finite-$N$ effect that vanishes in the continuum --- the durable
+large-population result is the static coordination/screening logic. The dynamic effect is
+real for small campaigns, which is the regime the live platform actually runs.
+
+% =====================================================================
+\section{The disclosure dial decomposed}\label{sec:dial}
+
+The single dial $k$ controls two information channels with opposite signs.
+
+\subsection{The type/screening channel}
+
+Disclosure carries a signal about coalition \emph{type} --- good (deliverable) versus bad
+(illusory). The channel's precision is grounded in an actual information measure: the
+support count $m \sim \mathrm{Binom}(N, p_\psi)$ with $p_G > p_B$ is published under
+$k$-anonymity, and precision is the Shannon mutual information $I(\text{type};
+m_{\mathrm{obs}})$. The numerical findings, each surviving cross-mechanism
+re-implementation: $I(k)$ is monotone (data processing) and \emph{saturating}
+($I(1)=0.62$ bits $< H=0.97$ at the reference calibration --- the exact count does not
+perfectly reveal type, because the binomial supports overlap); therefore full disclosure
+does not perfectly screen, $s(1)<1$, \emph{derived} from the support gap rather than
+posited, with $s(1)\to1$ recovered in the large-gap perfect-separation limit; and the
+screening rate $s(k)$ is non-monotone under a pessimistic prior. One scope restriction: at
+$k=1$ every privacy mechanism collapses to the exact count, so the endpoint is pinned by
+$(p_G,p_B)$ alone, and the curve's interior shape is mechanism-dependent. The grounding
+closes the endpoint, not the curve; $(p_G,p_B)$ is itself the next-deeper primitive.
+
+\subsection{The pivotality/protection channel}
+
+Disclosure also reveals \emph{pivotal structure} --- who is and is not needed. The two
+channels live in complementary excludability regimes: the type channel has bite only at
+$\xi < 1-\kappa/V$, where the activation payoff exceeds the free-ride payoff; the
+protection channel operates in the complementary regime where free-riding pays
+($\xi > 1-\kappa/V$). There, in a contested market, revealing pivotality lets
+inframarginal movers free-ride and collapses clearing; masking forces every committer to
+act as if pivotal, sustaining the coalition.
+
+\subsection{The static band: a theorem}
+
+The static interplay of screening and unraveling produces the central disclosure
+comparative static: partial masking is optimal on a nonempty set contained strictly inside
+the interior of the integrity range --- a single band in every tested calibration, with
+connectedness the one open conjecture. Figure~\ref{fig:band} displays it; Proposition~\ref{prop:band} proves it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\textwidth]{figures/fig-band.pdf}
+\caption{The interior masking band. Optimal disclosure $k^*(c)$ in the static model at
+$q=0.95$ ($V=1$, $L=1.2$, $\tau=0.7$, Beta integrity family with concentration $\eta=8$).
+Full disclosure is optimal at both integrity extremes; partial masking on the interior
+band (dashed edges). The lower transition is a discontinuous global-max switch; the upper
+transition is continuous (Appendix~\ref{app:P1}).}
+\label{fig:band}
+\end{figure}
+
+\input{appendix/P1-statement}
+
+The proof (Appendix~\ref{app:P1}) characterizes the band sharply for the Beta family:
+the first-order--condition violation set is an exact interval, via strict log-concavity of
+the marginal-balance ratio (a trigamma inequality); the upper threshold is the root of an
+explicit equation with $k^*(c)\to1$ continuously; and Topkis comparative statics give that
+raising authentication accuracy $q$ expands the masking set and lowers every optimal
+disclosure level. Two scope restrictions: at $q=1$ with the reference parameters the upper
+closure fails --- masking persists toward $c=1$, consistent with the numerics --- so the
+$c_{\mathrm{hi}}<1$ half is scoped to $q<1$; and connectedness of the masking set is
+Conjecture~\ref{conj:connected} (the lower transition occurs while the corner first-order
+condition still holds, so no FOC characterizes it).
+
+% =====================================================================
+\section{Selection and the structure of partial masking}\label{sec:selection}
+
+Two results complete the disclosure story: the masking advantage needs no equilibrium
+refinement parameter, and partial masking has two structural sources.
+
+\subsection{A refinement-free selection}
+
+Earlier numerical versions selected the dynamic equilibrium by a logit rule with
+rationality parameter $\lambda$ --- and the masking advantage inverted at high $\lambda$,
+leaving the result refinement-dependent. The resolution replaces logit with
+Carlsson--van~Damme risk dominance: a $\popp$-consistent Laplacian belief, uniform over
+opponents' commit \emph{propensity}, routed through the binomial movement kernel. At
+diagonal (volunteer's-dilemma) states, where complementarities fail, the Laplacian action
+is adopted as the \emph{definition} of stagewise risk dominance rather than invoked as an
+FMP theorem (\S\ref{sec:lit}). No rationality parameter appears anywhere in the model, so
+no inversion is possible.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\textwidth]{figures/fig-adv.pdf}
+\caption{Masked versus revealed clearing probability across market difficulty $\theta$,
+at the reference calibration. The revealed game collapses exactly ($\pir=0$) in the
+contested regime; masked momentum is sustained throughout. The masking advantage at
+$\theta\le0.30$ is $+0.99$.}
+\label{fig:adv}
+\end{figure}
+
+\input{appendix/P2-statement}
+
+The contested-regime collapse --- part (iv) --- is exact and fully proven: when
+free-riding pays ($\xi > 1-\kappa/V$) and the market is contested, the pivotality weight
+classifies every mover as inframarginal, revelation triggers the free-ride action, and
+$\pir = 0$ identically. The momentum floor is proven conditional on diagonal ignition
+(property DI), which is itself proven outright at the deadline rung and unconditionally
+for $K=2$; at interior rungs for $K\ge3$ it is Conjecture~\ref{conj:DI}, verified
+pointwise at every calibration grid point. The precise reading of the advantage: strictly
+positive when contested, near-tie elsewhere (the numerics give $-8\times10^{-4}$ at
+$\theta=0.40$ --- ``$\ge 0$ everywhere'' is false and we do not claim it).
+
+\subsection{The bundled dial}
+
+Why is the optimal masking \emph{partial}? With both channels live in the dynamic game on
+the single bundled dial, a genuine interior optimum exists (Figure~\ref{fig:Gk}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\textwidth]{figures/fig-Gk.pdf}
+\caption{The bundled-dial inverted-U\@. Activation gain $G(k)$ at the reference contested
+calibration ($\theta=0.30$, $\xi=0.667$, $T=10$): both endpoints are dead --- full masking
+cannot ignite momentum, full disclosure fully unravels --- and the interior peak near
+$k=0.70$ carries the entire welfare range.}
+\label{fig:Gk}
+\end{figure}
+
+\input{appendix/P3-statement}
+
+The decoupled-dial result --- part (iii) --- is what makes the interior structural rather
+than incidental: with two separate dials, the optimum is the corner
+$(\ktype,\kpiv)=(1,0)$, full type-disclosure with zero pivotality leakage. The bundled
+interior is therefore a \emph{constrained} optimum created by the yoking --- one physical
+dial cannot certify a coalition's reality without leaking its pivotal structure --- and
+never a type-versus-pivotality balance. Partial masking thus has two distinct sources:
+the integrity-distribution shape (Proposition~\ref{prop:band}) and the one-dial coupling
+(Proposition~\ref{prop:bundle}).
+
+Horizon scope: parts (ii)--(iii) are $T=1$ theorems; the endpoint results hold at
+every horizon. At $T\ge2$ the original general-horizon decoupled-corner conjecture was
+\emph{falsified} in adversarial verification --- within the proposition's own assumptions,
+the corner can fail to be attained, and positive pivotality leakage can strictly improve
+welfare at fixed type-disclosure (Observation~\ref{obs:leakagehelps}): a leakier future
+cuts the waiting option and re-ignites mid-states through the continuation channel.
+Whether the decoupled argmax always retains $\kpiv=0$ is open
+(Conjecture~\ref{conj:decoupledT}). The leakage-helps phenomenon is itself a new,
+empirically probeable prediction.
+
+% =====================================================================
+\section{Boundary: where the theorem reverses}\label{sec:boundary}
+
+The theorem is conditional on the walls actually being down.
+
+\emph{$q$ collapses.} Authentication is weak; masked disclosure now shields
+\emph{manufactured} commitments rather than protecting a real coalition. ``Minimal
+disclosure'' flips from efficient to fraud-enabling. Below the located threshold
+(the joint region requires $q\gtrsim0.95$), transparency dominates.
+
+\emph{$c$ collapses.} The conditional structure is illusory --- nodes are real but their
+conditions are not jointly satisfiable; clearing produces no activatable outcome. The
+masking band is interior in $c$ (Proposition~\ref{prop:band}): below it, screening
+dominates and transparency wins; above it, coalitions are too robust to unravel and
+disclosure is harmless.
+
+\emph{The contested regime is absent.} The protection channel matters only where the
+static selection frontier binds and free-riding pays ($\xi > 1-\kappa/V$): a good
+coalition that exists but would unravel if its pivotal structure were exposed. Where
+completion is easy, masking is neutral (the near-tie region of
+Proposition~\ref{prop:selection}).
+
+\emph{Endogeneity over-extends.} If outcome terms stay fuzzy past the binding moment, the
+campaign instrument is indeterminate; precision must harden as commitment strength rises
+(the interior $\sigma^*$ under high indeterminacy cost).
+
+\emph{The taxonomy over-expands.} ``Interdependent action'' becomes a slogan unless every
+example reduces to a conditional-commitment graph --- nodes, edges, constraints, fixed
+point. The family is broad; the primitive must stay narrow.
+
+% =====================================================================
+\section{Mechanism and an administrable rule}\label{sec:rule}
+
+\paragraph{Mechanism.} A no-custody clearinghouse for conditional commitments with
+(a)~authenticated nodes, (b)~verifiable conditional structure, (c)~endogenous outcome
+terms with a hardening schedule, (d)~partial disclosure (an interior $k$-anonymity level)
+on granular state, (e)~value riding the recipient's own rail, and (f)~non-transferable
+participant commitments.
+
+\paragraph{Normative rule.} We propose model-motivated design criteria for a limited
+safe harbor for a privacy-preserving conditional-commitment clearinghouse --- a proposed
+administrable rule, not a legal conclusion, and pending counsel review. The four criteria:
+non-transferable participant commitments; no custody of principal; an auditable
+node-authentication process; and small-$N$ disclosure controls. The rule regulates the
+\emph{clearing of commitments} --- not raw wishes, raw data, platform funds, or
+transferable financial instruments --- and is keyed to the conditional-commitment
+structure, not the campaign's vertical. The theory motivates each prong: the
+authentication prong is the $q$-collapse boundary; the disclosure-controls prong is the
+small-$N$ regime where the dynamic protection effect (and its abuse surface) lives; the
+no-custody and non-transferability prongs keep the cleared object a coordination device
+rather than a financial instrument.
+
+% =====================================================================
+\section{Implementation: a constructive implementability case}\label{sec:constructive}
+
+The empirical spine is not yet a dataset --- it is a live platform's release history,
+readable as a constructive case that the institution is implementable. Implementability is
+all this section claims: a release history cannot validate optimality, welfare, or the
+selection results, and the calibration quantities are unmeasured
+(Section~\ref{sec:empirics}). The
+platform (ifwishlist, live June 2026) did not ship unrelated features; it removed the four
+walls one at a time: authenticated counterpart resolution (credibility, $q$); a
+conditional-commitment grammar with compound and roster thresholds (compatibility, $c$);
+semantic routing (discoverability); a no-custody rail (legality); and the $k$-anonymity
+dial with a specification-hardening schedule --- an architecture consistent with the
+model's recommended design.
+
+% =====================================================================
+\section{Empirical agenda}\label{sec:empirics}
+
+The theory chain has largely converged; the marginal value has moved to measurement. Four
+quantities, all currently unmeasured, each first-order for a specific result:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Quantity} & \textbf{Governs} & \textbf{Disciplines} \\
+\midrule
+support gap $p_G - p_B$ & the screening cap $s(1)$, large-gap reversal & \S\ref{sec:dial} \\
+excludability $\xi$ & which channel regime governs & \S\ref{sec:dial}--\ref{sec:selection} \\
+campaign-size distribution & the scale of the finite-$N$ protection effect & \S\ref{sec:central} \\
+$\pi_b$ and the integrity distribution & band location; interior $k^*$ & Prop.~\ref{prop:band}, \ref{prop:bundle} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A further theory iteration is warranted only when a measured quantity makes a specific
+model question first-order. Observation~\ref{obs:leakagehelps} adds a sharp new item:
+the leakage-helps regime is directly probeable on live activation data.
+
+% =====================================================================
+\section{Scope, open questions, and the verification record}\label{sec:scope}
+
+Every numerical claim in this paper comes from a chain of solver scripts under fixed
+seeds, and every analytical result was drafted against those scripts as ground truth and
+then attacked by three separately instantiated adversarial verification passes --- a
+step-by-step logic audit, a counterexample hunt running randomized parameter sweeps inside
+the stated assumption sets, and a scope audit of claim--proposition alignment --- each run
+with no access to the others' findings, with scripts and logs archived alongside the
+numerical companion. Roughly
+$3{,}500$ randomized counterexample instances were run against the stated assumption sets;
+no proved statement was refuted. The process corrected the first draft of every artifact
+it touched --- including four sections of this paper --- and falsified one of our own
+conjectures, producing Observation~\ref{obs:leakagehelps}. We report the open residue explicitly:
+
+\begin{enumerate}
+\item \textbf{Conjecture~\ref{conj:connected}} (connectedness of the masking band): the
+lower transition is a discontinuous global-max switch with no first-order
+characterization.
+\item \textbf{Conjecture~\ref{conj:DI}} (diagonal ignition at interior rungs): closing it
+needs a simultaneous induction bounding the on-cone waiting value.
+\item \textbf{Conjecture~\ref{conj:interiorT}} (the $T>1$ interior): numerically robust;
+the band grows with horizon.
+\item \textbf{Conjecture~\ref{conj:decoupledT}} (decoupled argmax retains zero leakage):
+open after refinement; the pointwise version is false
+(Observation~\ref{obs:leakagehelps}).
+\item Deriving $(p_G,p_B)$ from a deeper compatibility primitive; correlated signals; an
+endogenous adverse-selection prior $\pi_b$.
+\end{enumerate}
+
+Two further scope notes. The legality-wall claim inherits open predicates pending counsel
+review (the no-custody rail's money-transmission posture; charitable-solicitation
+regimes). And the live system does not yet instrument $q$ or $c$; both are required for
+the central theorem to bite on data.
+
+% =====================================================================
+\section{Conclusion}\label{sec:conclusion}
+
+AI does not make the engine intelligent. It removes two of the four walls --- credibility
+and discoverability --- that kept interdependent willingness from ever clearing. The
+mechanism removes the third (compatibility); the legal architecture removes the fourth.
+With all four down, ``I would, if\ldots'' becomes a clearable economic object --- and the
+efficient clearinghouse is the one that holds nothing, fixes nothing early, and hides the
+granular.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\clearpage
+\appendix
+
+\section{Proof of Proposition~\ref{prop:band}}\label{app:P1}
+\input{appendix/P1-proof}
+
+\clearpage
+\section{Proof of Proposition~\ref{prop:selection}}\label{app:P2}
+\input{appendix/P2-proof}
+
+\clearpage
+\section{Proof of Proposition~\ref{prop:bundle}}\label{app:P3}
+\input{appendix/P3-proof}
+
+\end{document}

@@ -1,0 +1,641 @@
+% ------------------------------------------------------------------
+% P3 appendix -- Proposition \ref{prop:bundle}: the bundled disclosure
+% dial has an interior constrained optimum; decoupled dials optimize
+% at a corner. Full setup, assumptions (A0)-(A5), lemmas, proofs,
+% remarks, falsification record, observation, and conjectures.
+%
+% Include file: no \documentclass, no \section at top level.
+% Requires from the main preamble: amsmath, amssymb, amsthm, and the
+% amsthm environments  proposition, lemma, assumption, conjecture,
+% observation, remark  (plus  proof  from amsthm).
+% ------------------------------------------------------------------
+
+\subsection*{Setup}
+
+This appendix formalizes v9~S11 (\texttt{2026-06-09-ifwishlist-toy-model-v9.md}, \S3).
+Ground truth for the model: \texttt{runs/numcheck/v9\_dynamic\_two\_channel.py} (functions
+\texttt{solve\_unified}, \texttt{type\_perceived}, \texttt{G\_and\_s},
+\texttt{G\_and\_s\_decoupled}); independent re-implementation \texttt{v9\_verify\_s11.py}.
+Notation follows the anchor paper \S3--\S6 (\texttt{2026-06-10-ifwishlist-anchor-paper-v3.md}):
+disclosure dial $k$, threshold share $\theta$ with $K=\lceil(1-\theta)N\rceil$, excludability
+$\xi$, bad-coalition prior $\pi_b$.
+
+\paragraph{The activation game $\Gamma_T(k_{\mathrm{type}},k_{\mathrm{piv}})$.}
+The model below is a direct formalization of \texttt{solve\_unified} $+$
+\texttt{type\_perceived} in \texttt{v9\_dynamic\_two\_channel.py} --- exact up to the idealized
+stage-equilibrium set $S$ (the script approximates $S$ on a grid with bisection; see R1.4) ---
+written with two separate dials; the \textbf{bundled} game of S11 is the diagonal
+$k_{\mathrm{type}}=k_{\mathrm{piv}}=k$, the \textbf{decoupled} game is the full square
+$(k_{\mathrm{type}},k_{\mathrm{piv}})\in[0,1]^2$ (the script's \texttt{G\_and\_s\_decoupled}).
+
+\paragraph{M1 (population, coalition, clearing).}
+$N$ agents are attached to one coalition of unknown type $\psi\in\{G,B\}$ with prior
+$\Pr(\psi=B)=\pi_b$. Time runs in discrete periods indexed by the remaining horizon
+$h=T,T-1,\dots,1$; the state is $(m,h)$ where $m$ $=$ number of agents committed so far. The
+coalition \textbf{clears} the first time $m\ge K$.
+
+\paragraph{M2 (payoffs and their perceived, type-blended versions).}
+True terminal payoffs: a committer pays $\kappa>0$; if the coalition clears she receives
+$v_\psi$ ($v_G=V>0$, $v_B=-L<0$); if she commits and the coalition never clears she receives
+$-L_p<0$ (exposure loss, not type-blended). A never-committer receives $\xi v_\psi$ if the
+coalition clears ($\xi\in(0,1]$ $=$ excludability leak) and $0$ otherwise. Each period an
+uncommitted agent is active she pays waiting friction $\rho\ge 0$. The type dial
+$k_{\mathrm{type}}$ enters as a reduced-form \textbf{payoff blend} (the script's
+\texttt{type\_perceived}): members of a type-$\psi$ coalition act on the \emph{perceived}
+payoffs
+\begin{gather*}
+P_c(k_{\mathrm{type}};\psi)=(1-k_{\mathrm{type}})\,\bar P_c+k_{\mathrm{type}}\,(v_\psi-\kappa),\\
+P_n(k_{\mathrm{type}};\psi)=(1-k_{\mathrm{type}})\,\bar P_n+k_{\mathrm{type}}\,\xi v_\psi,
+\end{gather*}
+where the pooled values are $\bar P_c=\mathbb E-\kappa$, $\bar P_n=\xi\,\mathbb E$, with
+$\mathbb E:=(1-\pi_b)V-\pi_b L$ (prior-mean clearing value). $P_c$ is the perceived payoff to
+having committed when the coalition clears; $P_n$ the perceived payoff to not having committed
+when it clears.
+
+\paragraph{M3 (stage decision problem).}
+At state $(m,h)$ with $m<K$ there are $n=N-m$ uncommitted agents. Given a candidate symmetric
+commit propensity $q\in[0,1]$, each \emph{other} uncommitted agent commits this period with
+probability $a=p_{\mathrm{opp}}q$ ($p_{\mathrm{opp}}\in(0,1)$ $=$ availability). Let
+$Y\sim\mathrm{Binom}(n-1,a)$ be the others' commitments. The deciding agent compares
+(continuation objects $\Pi,U$ defined in M6; conventions $\Pi(m',h)=1$ for $m'\ge K$,
+$\Pi(m',0)=0$ and $U(m',0)=0$ for $m'<K$):
+\[
+v^w(q)=-\rho+\mathbb E\Big[\mathbf 1\{m+Y\ge K\}\,P_n+\mathbf 1\{m+Y<K\}\,U(m+Y,h-1)\Big],
+\]
+\begin{multline*}
+v^c(q)=-\rho+\mathbb E\Big[\mathbf 1\{m{+}1{+}Y\ge K\}\,P_c\\
++\mathbf 1\{m{+}1{+}Y<K\}\big(P_c\,\Pi(m{+}1{+}Y,h-1)\\
+-L_p\,(1-\Pi(m{+}1{+}Y,h-1))\big)\Big],
+\end{multline*}
+and the commit--wait differential is $D(q):=v^c(q)-v^w(q)$ (a polynomial in $q$, hence
+continuous). The \textbf{stage-equilibrium set} is
+\[
+S=\{q\in(0,1):D(q)=0\}\cup\{0\ \text{if}\ D(0)\le 0\}\cup\{1\ \text{if}\ D(1)\ge 0\};
+\]
+$S\neq\emptyset$ by continuity of $D$.
+
+\paragraph{M4 (momentum selection --- a model primitive, not a derived object).}
+The played propensity is the \emph{largest} stage equilibrium,
+$a_{\mathrm{mom}}(m,h)=\max S$ (the v6/v7 ``optimistic/momentum'' selection; the script's
+\texttt{max(eqs)}). Its $\lambda$-free justification is the separate S10 strand; here it is
+taken as given.
+
+\paragraph{M5 (pivotality leakage / free-ride damping).}
+Define the pivotality weight
+\[
+\mathrm{piv}(m)=\mathrm{clip}\Big(1-\frac{K-m-1}{\max(1,\;p_{\mathrm{opp}}(N-m))},\,0,\,1\Big)
+\]
+and the free-ride gate $\chi=\mathbf 1\{\xi V>V-\kappa\}$ (free-riding profitable at true good
+payoffs; the script computes the gate once from true values and applies it to both types). A
+fraction $f=k_{\mathrm{piv}}\,(1-\mathrm{piv}(m))\,\chi$ of would-be movers free-ride, so the
+effective propensity is $a_{\mathrm{eff}}(m,h)=a_{\mathrm{mom}}(m,h)\,(1-f)$.
+
+\paragraph{M6 (transition, values, outputs).}
+Given $a_{\mathrm{eff}}$, the number of new commitments is
+$J\sim\mathrm{Binom}(n,\,p_{\mathrm{opp}}a_{\mathrm{eff}})$, and
+\begin{gather*}
+\Pi(m,h)=\mathbb E[\mathbf 1\{m+J\ge K\}+\mathbf 1\{m+J<K\}\,\Pi(m+J,h-1)],\\
+U(m,h)=a_{\mathrm{eff}}\,v^c(a_{\mathrm{eff}})+(1-a_{\mathrm{eff}})\,v^w(a_{\mathrm{eff}}).
+\end{gather*}
+The game is solved once with $\psi=G$ perceived payoffs and once with $\psi=B$; the outputs are
+\[
+G(k_{\mathrm{type}},k_{\mathrm{piv}})=\Pi_G(0,T),\qquad
+s(k_{\mathrm{type}},k_{\mathrm{piv}})=1-\Pi_B(0,T),
+\]
+\[
+W(k_{\mathrm{type}},k_{\mathrm{piv}})=(1-\pi_b)\,G\,V-\pi_b\,(1-s)\,L .
+\]
+Bundled-dial objects are written $G(k):=G(k,k)$ etc.
+
+\subsection*{Assumptions}
+
+\begin{assumption}[A0 --- regularity]\label{ass:A0}
+$N\ge 2$; $K\in\{2,\dots,N\}$; $p_{\mathrm{opp}}\in(0,1)$; $0<\kappa<V$; $L>0$; $L_p>0$;
+$\rho\ge 0$; $\pi_b\in(0,1)$; $\xi\in(0,1]$.
+\end{assumption}
+
+\begin{assumption}[A1 --- pessimistic pooling]\label{ass:A1}
+$0\le \mathbb E<\kappa$, where $\mathbb E=(1-\pi_b)V-\pi_b L$. (Pooled with the bad prior,
+clearing is not worth the commitment cost; the pooled free-ride payoff $\xi\mathbb E$ is still
+nonnegative.)
+\end{assumption}
+
+\begin{assumption}[A2 --- free-ride regime]\label{ass:A2}
+$\varepsilon:=\xi V-(V-\kappa)>0$, i.e.\ $\xi>1-\kappa/V$, so the gate $\chi=1$. (The anchor's
+``channel has bite only when $\xi$ exceeds $\xi^*=1-\kappa/V$''.)
+\end{assumption}
+
+\begin{assumption}[A3 --- thin root field]\label{ass:A3}
+$K-1\ge p_{\mathrm{opp}}N$: at the empty state the expected number of available movers does not
+cover the gap, so $\mathrm{piv}(0)=0$ --- no early mover is perceived pivotal, and disclosure at
+the root reveals pure inframarginality.
+\end{assumption}
+
+\begin{assumption}[A4 --- pivotal ignition at full type-news]\label{ass:A4}
+With $X\sim\mathrm{Binom}(N-1,p_{\mathrm{opp}})$ and $\beta_1=\Pr(X=K-1)$,
+$\beta_+=\Pr(X\ge K)$, $\beta_-=\Pr(X\le K-2)$:
+\[
+(V-\kappa)\,\beta_1\;>\;\varepsilon\,\beta_+\;+\;L_p\,\beta_-\,.
+\]
+(At true good payoffs, the pivotal-event gain outweighs the free-ride temptation and the
+exposure risk. Since $\beta_1>0$ under A0, A4 is satisfiable whenever $\varepsilon$ and $L_p$
+are small enough.)
+\end{assumption}
+
+\begin{assumption}[A5 --- small waiting friction]\label{ass:A5}
+$\rho\,(T-1)<\min\{L_p,\;\kappa-\mathbb E\}$. (Vacuous at $T=1$.)
+\end{assumption}
+
+\paragraph{Non-vacuity.}
+The assumption set is non-empty and contains an anchor-shaped instance:
+$(N,K,p_{\mathrm{opp}},V,\kappa,\xi,\pi_b,L,L_p)=(10,7,0.6,3,1,0.667,0.5,3,0.5)$, any
+$\rho\in[0,1)$ at $T=1$. Check: $\mathbb E=0\in[0,1)$ (A1); $\varepsilon=0.001>0$ (A2);
+$K-1=6\ge 6=p_{\mathrm{opp}}N$ (A3); $\beta_1=0.2508$, $\beta_+=0.2318$, $\beta_-=0.5174$, so
+A4 reads $0.5016>0.001\cdot 0.2318+0.5\cdot 0.5174=0.2589$ \checkmark.
+
+\paragraph{Stated restrictions relative to the v9 numerics}
+(full ledger in the Remarks below): the interior-existence and decoupled-corner parts are
+proved at horizon $T=1$ (one activation round), where the continuation objects
+$\Pi(\cdot,h-1),U(\cdot,h-1)$ vanish identically; the endpoint results $G(0)=G(1)=0$ are proved
+for \textbf{every} $T\ge 1$. The stage-equilibrium set is the idealized $S$ above (the script
+approximates it on a grid with bisection).
+
+\subsection*{The proposition}
+
+\begin{restatedproposition}[Proposition~\ref{prop:bundle}, restated: bundled-dial interior optimum; decoupled-dial corner]
+\leavevmode
+\begin{itemize}
+\item[(i)] \textbf{Bundled dial: both corners dead, a live interior, every optimum interior.}
+\emph{Endpoints (any horizon).} Under A0, A1, A2, A3, A5, for every $T\ge 1$, the bundled game
+satisfies
+\[
+G(0)=0,\ \ s(0)=1,\qquad G(1)=0,\ \ s(1)=1,\quad\text{hence}\quad W(0)=W(1)=0 .
+\]
+($k=0$: pooled news cannot ignite momentum --- the unique stage equilibrium is $q=0$ at every
+state; $k=1$: full pivotality leakage makes the empty state absorbing --- every root-state mover
+free-rides.)
+\emph{Interior (one round).} If in addition A4 holds and $T=1$, there is a threshold
+$\bar k\in(0,1)$ --- the unique root of the affine root-state differential $D_1$ of
+Lemma~\ref{lem:ignition} --- such that for every $k\in[\bar k,1)$:
+\begin{gather*}
+G(k)=\Pr\!\big(\mathrm{Binom}(N,\;p_{\mathrm{opp}}(1-k))\ge K\big)>0,\qquad s(k)=1,\\
+W(k)=(1-\pi_b)\,V\,G(k)>0 .
+\end{gather*}
+Moreover $W:[0,1]\to\mathbb R$ is upper semicontinuous, attains its maximum, and \textbf{every
+maximizer lies in the open interval $(0,1)$}.
+\item[(ii)] \textbf{Decoupled dials: the optimum is the corner.} Under A0--A5 and $T=1$, the
+decoupled welfare satisfies, for all $(k_{\mathrm{type}},k_{\mathrm{piv}})\in[0,1]^2$,
+\[
+W(k_{\mathrm{type}},k_{\mathrm{piv}})\;\le\;W(1,0)\;=\;(1-\pi_b)\,V\,
+\Pr\!\big(\mathrm{Binom}(N,p_{\mathrm{opp}})\ge K\big)\;>\;0,
+\]
+and the argmax set is \textbf{exactly} $[\bar k,1]\times\{0\}$ (with $\bar k$ from part (i)):
+every optimum has \emph{zero} pivotality leakage and \emph{full ignition}, and
+$(k_{\mathrm{type}},k_{\mathrm{piv}})=(1,0)$ attains the optimum. In particular every point
+with $k_{\mathrm{piv}}>0$ is strictly suboptimal.
+\item[(iii)] \textbf{The interior is a constrained optimum created by bundling.} Under A0--A5
+and $T=1$: $\sup_{k\in[0,1]}W(k,k)\le W(1,0)$, and the bundled diagonal never attains $W(1,0)$
+(every diagonal point has $a_{\mathrm{eff}}<1$). The bundled optimum is interior (part (i))
+while the unconstrained two-dial optimum is the corner (part (ii)); the interior $k^*$ is the
+constrained optimum of one dial forced to move both channels together --- not a
+type-versus-pivotality balance.
+\end{itemize}
+\end{restatedproposition}
+
+\subsection*{Proof}
+
+Throughout, fix a state $(m,h)$, write $n=N-m$, $g=K-m$ (the gap), and let
+$Y\sim\mathrm{Binom}(n-1,p_{\mathrm{opp}}q)$ denote the others' current-period commitments in
+the stage problem. Note
+$\Pr(Y=0)=(1-p_{\mathrm{opp}}q)^{\,n-1}\ge(1-p_{\mathrm{opp}})^{\,n-1}>0$
+for all $q\in[0,1]$, by $p_{\mathrm{opp}}<1$ (A0). $(\star)$
+
+\begin{lemma}[strict monotonicity of the binomial tail]\label{lem:tail}
+For integers $n\ge 1$, $1\le r\le n$, the map $F(b)=\Pr(\mathrm{Binom}(n,b)\ge r)$ is
+continuous on $[0,1]$, nondecreasing, strictly increasing on $(0,1)$, and $F(b)>0$ for $b>0$;
+indeed $F'(b)=n\binom{n-1}{r-1}b^{\,r-1}(1-b)^{\,n-r}$.
+\end{lemma}
+
+\begin{proof}
+$F(b)=\sum_{j\ge r}\binom nj b^j(1-b)^{n-j}$ is a polynomial. Term-by-term,
+\[
+\frac{d}{db}\binom nj b^j(1-b)^{n-j}
+=\underbrace{n\binom{n-1}{j-1}b^{j-1}(1-b)^{n-j}}_{=:t_j}
+-\underbrace{n\binom{n-1}{j}b^{j}(1-b)^{n-j-1}}_{=:u_j},
+\]
+using $j\binom nj=n\binom{n-1}{j-1}$ and $(n-j)\binom nj=n\binom{n-1}{j}$. Since $u_j=t_{j+1}$
+and $u_n=0$, the sum over $j=r,\dots,n$ telescopes to
+$t_r=n\binom{n-1}{r-1}b^{r-1}(1-b)^{n-r}$, which is $>0$ on $(0,1)$. Positivity for $b>0$:
+$F(b)\ge\Pr(\mathrm{Binom}(n,b)=n)=b^n>0$ when $r\le n$.
+\end{proof}
+
+\begin{lemma}[no ignition under pooled news; any horizon, any $k_{\mathrm{piv}}$, both types]\label{lem:noignition}
+Assume A0, A5, the bound $\mathbb E<\kappa$ from A1 (the sign restriction $\mathbb E\ge 0$ in
+A1 is not used here), and $k_{\mathrm{type}}=0$ (with $k_{\mathrm{piv}}\in[0,1]$ arbitrary,
+type $\psi\in\{G,B\}$ arbitrary). Then for every state $(m,h)$ with $m<K$, $h\ge 1$: the unique
+stage equilibrium is $q=0$, hence $a_{\mathrm{mom}}=a_{\mathrm{eff}}=0$; and $\Pi(m,h)=0$,
+$U(m,h)=-\rho h$. Consequently $G(0,k_{\mathrm{piv}})=0$ and $s(0,k_{\mathrm{piv}})=1$ for
+every $T\ge 1$.
+\end{lemma}
+
+\begin{proof}
+At $k_{\mathrm{type}}=0$ the perceived payoffs are the pooled values for \textbf{both} types:
+$P_c=\bar P_c=\mathbb E-\kappa$, $P_n=\bar P_n=\xi\mathbb E$. By $\mathbb E<\kappa$:
+$\bar P_c<0$, and $\bar P_c-\bar P_n=(1-\xi)\mathbb E-\kappa<0$ (if $\mathbb E\ge 0$ this is
+$\le\mathbb E-\kappa<0$ using $\xi\le 1$; if $\mathbb E<0$ then $(1-\xi)\mathbb E\le 0$ and the
+expression is $\le-\kappa<0$). $(\dagger)$
+
+Induct on $h$. \emph{Base $h=0$:} $\Pi(m,0)=0$, $U(m,0)=0=-\rho\cdot 0$ for $m<K$ by
+convention. \emph{Step:} assume $\Pi(m',h-1)=0$ and $U(m',h-1)=-\rho(h-1)$ for all $m'<K$.
+Substituting the hypothesis into M3 (failure branch of $v^c$ becomes $-L_p$; wait branch on
+$\{m+Y<K\}$ becomes $-\rho(h-1)$; the two leading $-\rho$ cancel):
+\begin{multline*}
+D(q)=\Big[\bar P_c\Pr(Y\ge g-1)-L_p\Pr(Y\le g-2)\Big]\\
+-\Big[\bar P_n\Pr(Y\ge g)-\rho(h-1)\Pr(Y\le g-1)\Big].
+\end{multline*}
+Splitting $\Pr(Y\ge g-1)=\Pr(Y=g-1)+\Pr(Y\ge g)$ and
+$\Pr(Y\le g-1)=\Pr(Y=g-1)+\Pr(Y\le g-2)$:
+\begin{equation}
+\begin{split}
+D(q)={}&\big(\bar P_c+\rho(h-1)\big)\Pr(Y=g-1)
++\big(\bar P_c-\bar P_n\big)\Pr(Y\ge g)\\
+&-\big(L_p-\rho(h-1)\big)\Pr(Y\le g-2).
+\end{split}\tag{L2.1}
+\end{equation}
+By A5, $\rho(h-1)\le\rho(T-1)<\min\{L_p,\kappa-\mathbb E\}$, so all three coefficients are
+negative: $\bar P_c+\rho(h-1)=\mathbb E-\kappa+\rho(h-1)<0$; $\bar P_c-\bar P_n<0$ by
+$(\dagger)$; $-(L_p-\rho(h-1))<0$. Hence $D(q)\le 0$ for all $q$. Strictness: if $m\le K-2$
+then $g-2\ge 0$ so $\Pr(Y\le g-2)\ge\Pr(Y=0)>0$ by $(\star)$ and the third term is strictly
+negative; if $m=K-1$ then $g-1=0$ so $\Pr(Y=g-1)\ge\Pr(Y=0)>0$ by $(\star)$ and the first term
+is strictly negative. So $D(q)<0$ for \textbf{all} $q\in[0,1]$: $q=0\in S$ (since $D(0)<0$),
+no $q\in(0,1)$ is in $S$ (needs $D=0$), and $1\notin S$ (needs $D(1)\ge 0$). Thus
+$a_{\mathrm{mom}}=\max S=0$, so $a_{\mathrm{eff}}=0$ regardless of $k_{\mathrm{piv}}$ (the
+damping multiplies zero). The transition is then degenerate at $J=0$:
+$\Pi(m,h)=\Pi(m,h-1)=0$, and $U(m,h)=v^w(0)=-\rho+U(m,h-1)=-\rho h$ (at $h=1$ the
+wait-no-clear branch is $0$, consistent with the convention). The induction closes. Finally
+$G(0,k_{\mathrm{piv}})=\Pi_G(0,T)=0$ and $\Pi_B(0,T)=0$ gives $s=1$.
+\end{proof}
+
+\begin{lemma}[full pivotality leakage freezes the root; any horizon, any $k_{\mathrm{type}}$, both types]\label{lem:freeze}
+Assume A0, A2, A3 and $k_{\mathrm{piv}}=1$ (with $k_{\mathrm{type}}\in[0,1]$, $\psi$
+arbitrary). Then $a_{\mathrm{eff}}(0,h)=0$ for every $h$, the state $m=0$ is absorbing, and
+$\Pi(0,T)=0$ for every $T\ge 1$. Consequently $G(k_{\mathrm{type}},1)=0$ and
+$s(k_{\mathrm{type}},1)=1$.
+\end{lemma}
+
+\begin{proof}
+At $m=0$: the gap is $K$ and $n=N$, so
+$\mathrm{piv}(0)=\mathrm{clip}\big(1-\frac{K-1}{\max(1,\,p_{\mathrm{opp}}N)}\big)$. If
+$p_{\mathrm{opp}}N\ge 1$ the ratio is $\ge 1$ by A3 ($K-1\ge p_{\mathrm{opp}}N$); if
+$p_{\mathrm{opp}}N<1$ the denominator is $1$ and the ratio is $K-1\ge 1$ by $K\ge 2$ (A0).
+Either way $\mathrm{piv}(0)=0$. By A2 the gate $\chi=1$. Hence $f=1\cdot(1-0)\cdot 1=1$ and
+$a_{\mathrm{eff}}(0,h)=a_{\mathrm{mom}}(0,h)\cdot 0=0$ --- whatever $a_{\mathrm{mom}}$,
+$k_{\mathrm{type}}$, and $\psi$ are. The transition from $(0,h)$ is degenerate at $J=0$, so by
+induction on $h$, $\Pi(0,T)=\Pi(0,0)=0$ (using $K\ge 2>0$). Both types are frozen at the root,
+so $G(\cdot,1)=0$ and $1-s(\cdot,1)=\Pi_B(0,T)=0$.
+\end{proof}
+
+\begin{lemma}[interior ignition at $T=1$]\label{lem:ignition}
+Assume A0--A5 and $T=1$, type $G$, bundled dial $k_{\mathrm{type}}=k_{\mathrm{piv}}=k$. Define
+\[
+D_1(k):=P_c(k;G)\,\beta_1-\big(P_n(k;G)-P_c(k;G)\big)\,\beta_+-L_p\,\beta_-\,,
+\]
+with $\beta_1,\beta_+,\beta_-$ as in A4. Then: (a) $D_1$ is the commit--wait differential at
+the root state $(0,1)$ evaluated at $q=1$; (b) $D_1$ is affine and strictly increasing in $k$,
+with $D_1(0)<0<D_1(1)$, so there is a unique $\bar k\in(0,1)$ with $D_1(k)\ge 0$ exactly on
+$[\bar k,1]$; (c) for every $k\in[\bar k,1]$, $a_{\mathrm{mom}}(0,1)=1$ and
+$a_{\mathrm{eff}}(0,1)=1-k$; (d) for every $k\in[\bar k,1)$,
+$G(k)=\Pr(\mathrm{Binom}(N,p_{\mathrm{opp}}(1-k))\ge K)>0$.
+\end{lemma}
+
+\begin{proof}
+(a) At $T=1$ the continuations vanish ($\Pi(\cdot,0)=0$, $U(\cdot,0)=0$), so at
+$(m,h)=(0,1)$, $g=K$, the formula-(L2.1)-style computation gives, for general $q$,
+\begin{equation}
+D(q;k)=P_c(k)\Pr(Y=K-1)-\big(P_n(k)-P_c(k)\big)\Pr(Y\ge K)-L_p\Pr(Y\le K-2),\tag{L4.1}
+\end{equation}
+where now $P_c(k)=P_c(k;G)$, $P_n(k)=P_n(k;G)$ and $Y\sim\mathrm{Binom}(N-1,p_{\mathrm{opp}}q)$.
+At $q=1$ the three probabilities are $\beta_1,\beta_+,\beta_-$, giving $D(1;k)=D_1(k)$.
+
+(b) $P_c(\cdot)$ and $P_n(\cdot)$ are affine in $k$ (M2), so $D_1$ is affine. At $k=1$:
+$P_c=V-\kappa$, $P_n-P_c=\xi V-(V-\kappa)=\varepsilon$, so
+$D_1(1)=(V-\kappa)\beta_1-\varepsilon\beta_+-L_p\beta_->0$ by A4. At $k=0$ the payoffs are the
+pooled ones, and each term of (L4.1) is $\le 0$ by $(\dagger)$ of
+Lemma~\ref{lem:noignition} ($\bar P_c<0$, $\bar P_c-\bar P_n<0$), with the third strictly
+negative because $\beta_-\ge(1-p_{\mathrm{opp}})^{N-1}>0$ ($(\star)$, using $K\ge 2$); so
+$D_1(0)<0$. An affine function with $D_1(0)<0<D_1(1)$ has strictly positive slope, hence a
+unique root $\bar k\in(0,1)$ and $\{k:D_1(k)\ge 0\}=[\bar k,1]$.
+
+(c) For $k\in[\bar k,1]$, $D(1;k)=D_1(k)\ge 0$, so $q=1\in S$ and
+$a_{\mathrm{mom}}(0,1)=\max S=1$. By A3 and A2 (as in Lemma~\ref{lem:freeze})
+$\mathrm{piv}(0)=0$, $\chi=1$, so $f=k$ and $a_{\mathrm{eff}}=1-k$.
+
+(d) For $k\in[\bar k,1)$, $a_{\mathrm{eff}}=1-k\in(0,1]$, and at $T=1$ the clearing
+probability is exactly one binomial tail over all $n=N$ uncommitted agents (M6 with
+$\Pi(\cdot,0)=0$):
+$G(k)=\Pi_G(0,1)=\Pr\big(\mathrm{Binom}(N,\,p_{\mathrm{opp}}(1-k))\ge K\big)$, which is $>0$
+by Lemma~\ref{lem:tail} since $p_{\mathrm{opp}}(1-k)>0$ and $K\le N$.
+\end{proof}
+
+\begin{lemma}[bad coalitions never ignite at $T=1$, at any dial setting]\label{lem:bad}
+Assume A0, A1 and $T=1$, type $B$, any $(k_{\mathrm{type}},k_{\mathrm{piv}})\in[0,1]^2$. (A2
+is not needed: the stage equilibrium below is already $q=0$, so the conclusion holds whatever
+the value of the gate $\chi$.) Then the unique stage equilibrium at $(0,1)$ is $q=0$, so
+$\Pi_B(0,1)=0$ and $s(k_{\mathrm{type}},k_{\mathrm{piv}})=1$.
+\end{lemma}
+
+\begin{proof}
+Write $t=k_{\mathrm{type}}$. The bad-type perceived payoffs are
+$P_c(t;B)=(1-t)\bar P_c+t(-L-\kappa)$ and $P_n(t;B)=(1-t)\bar P_n+t(-\xi L)$. Both blend
+components of $P_c(\cdot;B)$ are negative ($\bar P_c=\mathbb E-\kappa<0$ by A1;
+$-L-\kappa<0$), so $P_c(t;B)<0$ for all $t$. Also
+\[
+P_c(t;B)-P_n(t;B)=(1-t)\big((1-\xi)\mathbb E-\kappa\big)+t\big(-(1-\xi)L-\kappa\big)<0,
+\]
+since the first bracket is $<0$ by $(\dagger)$ and the second is $<0$ ($\xi\le 1$, $L>0$,
+$\kappa>0$). Substituting into (L4.1) (which holds for either type at $T=1$): all three terms
+are $\le 0$ and the third is strictly negative ($\Pr(Y\le K-2)\ge\Pr(Y=0)>0$ by $(\star)$ and
+$K\ge 2$). Hence $D(q)<0$ for all $q$, $a_{\mathrm{mom}}=0$, $a_{\mathrm{eff}}=0$,
+$\Pi_B(0,1)=0$.
+\end{proof}
+
+\begin{lemma}[upper semicontinuity and attainment, $T=1$, bundled]\label{lem:usc}
+Assume A0--A3, A5 and $T=1$. Then $k\mapsto a_{\mathrm{mom}}(0,1)(k)$ is upper semicontinuous
+on $[0,1]$; hence
+$W(k)=(1-\pi_b)V\cdot\Pr(\mathrm{Binom}(N,p_{\mathrm{opp}}\,a_{\mathrm{mom}}(k)(1-k))\ge K)$
+is upper semicontinuous and attains its maximum on $[0,1]$.
+\end{lemma}
+
+\begin{proof}
+By Lemma~\ref{lem:bad}, $s\equiv 1$, so $W(k)=(1-\pi_b)V\,G(k)$ with
+$G(k)=F\big(p_{\mathrm{opp}}\,a_{\mathrm{eff}}(k)\big)$, $F$ the (continuous, nondecreasing)
+binomial tail of Lemma~\ref{lem:tail} and $a_{\mathrm{eff}}(k)=a_{\mathrm{mom}}(k)(1-k)$
+(Lemma~\ref{lem:ignition}(c)'s damping form, valid at the root for all $k$ by A2--A3).
+$D(q;k)$ in (L4.1) is jointly continuous (polynomial in $q$, affine in $k$). Let $k_j\to k$
+and pass to a subsequence with
+$q_j:=a_{\mathrm{mom}}(k_j)\to\alpha=\limsup_j a_{\mathrm{mom}}(k_j)$. Each $q_j\in S(k_j)$
+falls in one of three cases, one of which holds along a further subsequence: ($q_j=0$,
+$D(0;k_j)\le 0$): then $\alpha=0\le a_{\mathrm{mom}}(k)$ since $S(k)\subseteq[0,1]$ is
+nonempty. ($q_j=1$, $D(1;k_j)\ge 0$): then $D(1;k)\ge 0$ by continuity, so $1\in S(k)$ and
+$a_{\mathrm{mom}}(k)=1\ge\alpha$. ($q_j\in(0,1)$, $D(q_j;k_j)=0$): then $D(\alpha;k)=0$ by
+joint continuity; if $\alpha\in(0,1)$ then $\alpha\in S(k)$; if $\alpha\in\{0,1\}$ then
+$D(\alpha;k)=0$ also certifies $\alpha\in S(k)$ (the endpoint inequalities hold with
+equality). Either way $a_{\mathrm{mom}}(k)\ge\alpha$. So $a_{\mathrm{mom}}$ is u.s.c.; then
+$a_{\mathrm{eff}}$ is u.s.c.\ (product of a nonnegative u.s.c.\ function and a continuous
+nonnegative function), and $W=(1-\pi_b)V\cdot F(p_{\mathrm{opp}}\cdot)$ composed with
+$a_{\mathrm{eff}}$ is u.s.c.\ ($F$ continuous and nondecreasing). An u.s.c.\ function on a
+compact set attains its maximum.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:bundle}(i)]
+\emph{Endpoints.} $G(0)=0$ and $s(0)=1$: Lemma~\ref{lem:noignition} with $k_{\mathrm{piv}}=0$
+(any $T$). $G(1)=0$ and $s(1)=1$: Lemma~\ref{lem:freeze} with $k_{\mathrm{type}}=1$ (any $T$).
+Then by M6, $W(0)=W(1)=(1-\pi_b)\cdot 0\cdot V-\pi_b\cdot 0\cdot L=0$.
+
+\emph{Interior, $T=1$.} Lemma~\ref{lem:ignition} gives $\bar k\in(0,1)$ and, for
+$k\in[\bar k,1)$, $G(k)=\Pr(\mathrm{Binom}(N,p_{\mathrm{opp}}(1-k))\ge K)>0$;
+Lemma~\ref{lem:bad} gives $s(k)=1$, so $W(k)=(1-\pi_b)V\,G(k)>0$ (using $\pi_b<1$, $V>0$).
+
+\emph{Every maximizer interior.} By Lemma~\ref{lem:usc} the maximum is attained; its value is
+$\ge W(\bar k)>0=W(0)=W(1)$, so neither endpoint is a maximizer; every maximizer lies in
+$(0,1)$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:bundle}(ii)]
+At $T=1$, by Lemma~\ref{lem:bad}, $s\equiv 1$ on $[0,1]^2$, so
+$W(k_{\mathrm{type}},k_{\mathrm{piv}})=(1-\pi_b)V\,F\big(p_{\mathrm{opp}}\,
+a_{\mathrm{eff}}(k_{\mathrm{type}},k_{\mathrm{piv}})\big)$ with
+$F(b)=\Pr(\mathrm{Binom}(N,b)\ge K)$ and, at the root (A2, A3, as in
+Lemma~\ref{lem:freeze}),
+\[
+a_{\mathrm{eff}}(k_{\mathrm{type}},k_{\mathrm{piv}})
+=a_{\mathrm{mom}}(k_{\mathrm{type}})\,(1-k_{\mathrm{piv}}),
+\]
+where $a_{\mathrm{mom}}(k_{\mathrm{type}})$ depends only on $k_{\mathrm{type}}$ (the stage
+problem M3 involves the perceived payoffs only; the damping M5 is applied after).
+
+\emph{Upper bound and attainment.} $a_{\mathrm{eff}}\le 1$ always, and $F$ is nondecreasing
+(Lemma~\ref{lem:tail}), so $W\le(1-\pi_b)V\,F(p_{\mathrm{opp}})$. By
+Lemma~\ref{lem:ignition}(b)--(c) (whose ignition part uses only the type dial),
+$a_{\mathrm{mom}}(k_{\mathrm{type}})=1$ exactly for $k_{\mathrm{type}}\in[\bar k,1]$; in
+particular $a_{\mathrm{mom}}(1)=1$ (A4). Hence $a_{\mathrm{eff}}(1,0)=1$ and
+$W(1,0)=(1-\pi_b)V\,F(p_{\mathrm{opp}})$, which is $>0$ by Lemma~\ref{lem:tail}
+($p_{\mathrm{opp}}>0$, $K\le N$). So the upper bound is attained at $(1,0)$.
+
+\emph{Exact argmax set.} A point $(k_{\mathrm{type}},k_{\mathrm{piv}})$ attains the bound iff
+$F(p_{\mathrm{opp}}a_{\mathrm{eff}})=F(p_{\mathrm{opp}})$. Since $F$ is strictly increasing on
+$(0,1)$ (Lemma~\ref{lem:tail}) and $0<p_{\mathrm{opp}}<1$, this holds iff
+$a_{\mathrm{eff}}=1$, i.e.\ iff $a_{\mathrm{mom}}(k_{\mathrm{type}})=1$ \textbf{and}
+$k_{\mathrm{piv}}=0$, i.e.\ iff
+$(k_{\mathrm{type}},k_{\mathrm{piv}})\in[\bar k,1]\times\{0\}$. (If $a_{\mathrm{eff}}=0$ the
+value is $F(0)=0<W(1,0)$; if $a_{\mathrm{eff}}\in(0,1)$ the value is strictly below the
+bound.) In particular any $k_{\mathrm{piv}}>0$ forces
+$a_{\mathrm{eff}}\le 1-k_{\mathrm{piv}}<1$, hence strict suboptimality.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:bundle}(iii)]
+The diagonal is a subset of the square, so $\sup_k W(k,k)\le\max W=W(1,0)$. No diagonal point
+attains it: attainment requires $a_{\mathrm{eff}}=1$, i.e.\ $a_{\mathrm{mom}}(k)=1$ and $k=0$
+simultaneously; but $a_{\mathrm{mom}}(0)=0$ by Lemma~\ref{lem:noignition} (so $k=0$ gives
+$a_{\mathrm{eff}}=0$), and $k>0$ gives $a_{\mathrm{eff}}\le 1-k<1$. Combined with part (i)
+(every bundled maximizer interior) and part (ii) (every decoupled maximizer at
+$k_{\mathrm{piv}}=0$, $k_{\mathrm{type}}\in[\bar k,1]$), the bundled interior optimum is
+strictly below the decoupled corner optimum: it is the constrained optimum of the yoked dial,
+not a channel balance.
+\end{proof}
+
+\subsection*{Remarks}
+
+\begin{remark}[R1 --- what was restricted relative to the v9 numerics]\label{rem:ledger}
+\leavevmode
+\begin{enumerate}
+\item \emph{Horizon.} The interior-existence step (Lemma~\ref{lem:ignition}) and the
+decoupled-corner result (part (ii)) are proved at $T=1$, where the continuation objects
+vanish. The endpoint results $G(0)=G(1)=0$ (Lemmas~\ref{lem:noignition}--\ref{lem:freeze})
+hold for \textbf{every} $T\ge 1$, including the script's $T=10$. The script's run is the
+$T=10$ game; see the conjecture block below (C1 open; C2 falsified).
+\item \emph{Assumption regime vs.\ the anchor calibration.} The anchor calibration
+($\pi_b=0.2$, $V=L=3$, $\kappa=1$) has $\mathbb E=1.8>\kappa$, violating A1. It also violates
+A4: with the anchor's $L_p=3$, the right side of A4 is
+$\varepsilon\beta_++L_p\beta_-=0.001\cdot 0.2318+3\cdot 0.5174=1.5524$, far above the left
+side $(V-\kappa)\beta_1=2\cdot 0.2508=0.5016$. And A5 fails automatically once A1 does
+($\kappa-\mathbb E=-0.8<0$, so no $\rho\ge 0$ satisfies it at $T=10$). Of A0--A5 the anchor
+thus satisfies only A0, A2, A3: no interior result (Lemma~\ref{lem:ignition}, part (i)'s
+interior clause, part (ii)) is instantiated at the anchor --- see R3 for what this does to the
+mapping. Its $G(0)\approx 0$ is produced by a different sufficient mechanism --- large exposure
+risk $L_p=3$ plus a thin field $p_{\mathrm{opp}}=0.6$ (even at $q=1$ the root failure
+probability is large, so the $-L_p$ term dominates and the high stage equilibrium fails) ---
+which we have \textbf{not} formalized. A1 (pessimistic pooling, $\mathbb E<\kappa$) is the
+clean sufficient route to the same endpoint, and is the economically natural one (``masking
+pools you with the bad prior, and the pool is not worth the commitment cost''). The conditions
+here are sufficient, not necessary, and not the anchor calibration's own mechanism at $k=0$.
+The $k=1$ endpoint mechanism (Lemma~\ref{lem:freeze}), by contrast, \textbf{is} exactly the
+anchor's: in the $T=10$ run, $G(1)=0$ arises because $f=1$ at $m=0$
+($K-1=6\ge 6=p_{\mathrm{opp}}N$, A3 holds with equality at the anchor) --- the same
+root-freezing as our proof.
+\item \emph{Equilibrium selection.} The optimistic selection $a_{\mathrm{mom}}=\max S$ is a
+model primitive (M4, the v6/v7 convention; its $\lambda$-free license is the S10/FMP \S6.4
+strand, not re-proved here). Lemma~\ref{lem:ignition}'s interior ignition shows $q=1$
+\emph{is} a stage equilibrium and relies on the max selection to conclude it is played. Under
+a pessimistic selection ($\min S$) the interior would die at $T=1$ ($D(0)<0$ always, so
+$0\in S$ always); the inverted-U is a property of the momentum-selected dynamics, exactly as
+v9 frames it.
+\item \emph{Idealized equilibrium set.} The script approximates $S$ on a $201$-point grid with
+bisection and $10^{-12}$ tolerances; we use the exact $S$. No result depends on the
+approximation.
+\item \emph{Reduced-form channels.} The type channel is a payoff blend, not Bayesian updating
+from a signal, and the free-ride fraction is the script's
+$k_{\mathrm{piv}}(1-\mathrm{piv})\chi$ form --- both inherited verbatim from the ground-truth
+script (its own header flags them as ``honestly a unified-but-reduced model''). P3 formalizes
+that reduced model, not the deeper S12 information-theoretic channel.
+\end{enumerate}
+\end{remark}
+
+\begin{remark}[R2 --- a fully verified instance]\label{rem:instance}
+$(N,K,p_{\mathrm{opp}},V,\kappa,\xi,\pi_b,L,L_p,T)=(10,7,0.6,3,1,0.667,0.5,3,0.5,1)$ satisfies
+A0--A5 (arithmetic in the Setup above). Here $\bar k$ solves $0.98402\,k=0.74130$, i.e.\
+$\bar k\approx 0.7533$. Cross-check against the ground-truth solver run at these parameters
+with $T=1$ (sanity check only; no proof step uses it): $G(k)=0$ for $k\in\{0,0.2,\dots,0.75\}$,
+$G(0.76)=1.03\times10^{-4}>0$, $G(0.9)=2.9\times10^{-7}>0$, $G(1)=0$, $s\equiv 1$; decoupled
+$11\times 11$ grid argmax value $0.57342=(1-\pi_b)V\,F(p_{\mathrm{opp}})$ exactly as
+part (ii) predicts, reported at $(k_{\mathrm{type}},k_{\mathrm{piv}})=(0.8,0.0)$ --- the
+smallest grid point of the predicted flat argmax set
+$[\bar k,1]\times\{0\}=[0.7533,1]\times\{0\}$ (the script's tie-break keeps the first
+maximizer found).
+\end{remark}
+
+\begin{remark}[R3 --- map to the numerical anchors (v9 S11, $T=10$, $\theta=0.30$, $\xi=0.667$, $\pi_b=0.2$)]\label{rem:anchormap}
+$\theta=0.30\mapsto K=7$ --- A3 holds with equality ($K-1=6=p_{\mathrm{opp}}N$).
+$\xi=0.667\mapsto$ A2 with $\varepsilon=0.001$ (the anchor sits just inside the free-ride
+regime, $\xi^*=2/3$). ``$G(0)=0$: masking cannot ignite momentum'' $\mapsto$
+Lemma~\ref{lem:noignition}'s no-ignition conclusion ($a\equiv 0$ at every state; sufficient
+condition A1$+$A5, see R1.2). ``$G(1)=0$: full leakage fully unravels'' $\mapsto$
+Lemma~\ref{lem:freeze} (root absorbing; the anchor satisfies the exact hypotheses A2$+$A3).
+``Interior $G(0.70)=0.997$, $W=+2.39$'' $\mapsto$ Lemma~\ref{lem:ignition}'s live band
+$[\bar k,1)$ --- illustrative only, NOT an instantiation: the anchor violates A1, A4, and A5
+(R1.2), so Lemma~\ref{lem:ignition}'s hypotheses do not hold there and the anchor's interior
+is not an instance of the proposition. Among the anchor facts, only the $G(1)=0$ endpoint
+(Lemma~\ref{lem:freeze}, hypotheses A2$+$A3, which the anchor meets exactly) is a genuine
+instance; the $G(0)=0$ endpoint and the interior are qualitative matches produced by
+mechanisms we have not formalized. The genuine A0--A5 instance with a live interior is R2's
+($L_p=0.5$). At $T=1$ magnitudes are tiny ($G\sim 10^{-4}$) because a single round has no
+momentum amplification, while the anchor's $T=10$ chain amplifies the same ignition into
+$G\approx 1$. ``Decoupled corner $(k_{\mathrm{type}},k_{\mathrm{piv}})=(1,0)$ at every $\xi$''
+$\mapsto$ part (ii): the corner $(1,0)$ attains the optimum for every $\xi$ satisfying A2
+(the proof nowhere fixes $\xi$ beyond A2/A4); for $\xi\le\xi^*$ the gate is off, $f\equiv 0$,
+$k_{\mathrm{piv}}$ is payoff-irrelevant, and $k_{\mathrm{piv}}=0$ is (weakly) optimal
+trivially. ``Interior $W=+2.39$ beats both corners by the whole range'' $\mapsto$
+Proposition~\ref{prop:bundle}(i) final clause: $\max W>0=W(0)=W(1)$.
+\end{remark}
+
+\subsection*{Conjectures, a falsification record, and an observation (R4)}
+
+The following records the precise open statements and what would close them, together with the
+falsification record of the original general-horizon decoupled-corner conjecture.
+
+\begin{restatedconjecture}[Conjecture~\ref{conj:interiorT} (C1), restated: general-horizon interior]
+Under A0--A3, A5, and a strengthened ignition condition, for every $T\ge 1$ there exists
+$k\in(0,1)$ with $G(k)>0$ in the bundled game.
+\end{restatedconjecture}
+
+\emph{Status:} proved at $T=1$ (Lemma~\ref{lem:ignition}); numerically corroborated at $T=10$
+at the anchor (live interior with $G(0.70)=0.997$ --- corroboration only, since the anchor lies
+outside A0--A5, R1.2). \emph{Obstruction:} for $T\ge 2$ the wait branch of $D(1)$ contains the
+endogenous option value $U(m+Y,T-1)$ of staying uncommitted; the crude bound $U\le P_n$ is too
+loose (it makes the wait branch dominate for any $\varepsilon>0$). Closing C1 needs a sharper
+upper bound on the waiting option value at momentum-selected play --- e.g.,
+$U(m',h)\le P_n\Pi(m',h)-c\,(1-\Pi(m',h))$ for a positive constant $c$ --- or a direct
+monotone-induction argument that ignition at the root only improves at deeper states (where
+the gap is smaller and $\mathrm{piv}>0$ weakens the damping).
+
+\begin{remark}[A falsified conjecture: C2 --- general-horizon decoupled corner]\label{rem:falsifiedC2}
+As originally conjectured, C2 read: under A0--A5, for every $T\ge 1$ the decoupled argmax has
+$k_{\mathrm{piv}}=0$ and is attained at $(1,0)$. This is false. The counterexample hunter
+exhibited, inside A0--A5,
+\begin{gather*}
+(N,K,p_{\mathrm{opp}},V,\kappa,\xi,\pi_b,L,L_p,\rho)\\
+=(8,4,0.29,4.84,2.00,0.958,0.32,9.625,0.408,0.0126)
+\end{gather*}
+--- all of A0--A5 verified, A4: $0.6160>0.4770$ --- where the ground-truth solver gives
+$W(k_{\mathrm{type}}{=}1,k_{\mathrm{piv}}{=}0.2)=0.9903>W(1,0)=0.7629$, identically at
+$T=2,5,10$, with $s\equiv 1$ --- a pure good-coalition effect: at the full-disclosure corner,
+leakage $k_{\mathrm{piv}}\colon 0\to 0.2$ strictly RAISES the activation gain (the hunter
+reports the gain rising from $0.232$ to $0.296$; our re-extraction from
+\texttt{v9\_dynamic\_two\_channel.py} gives $W(1,0.2)=0.99025$, $W(1,0)=0.76286$, with
+$G\colon 0.2318\to 0.3009$). Confirmed by \texttt{v9\_verify\_s11.W\_general} to 5 decimals.
+Per the hunter, the failure is GENERIC: \texttt{6/8 fresh random A0-A5 draws violate C2 at
+T=10 (k\_piv in \{0.1-0.3\} strictly beats every k\_piv=0 point)}, and $(1,0)$ is not even the
+argmax of the $k_{\mathrm{piv}}=0$ line at $T\ge 2$ ($k_{\mathrm{type}}=0.9$ beats
+$k_{\mathrm{type}}=1$ in the instance above) --- we re-verified the line claim:
+$W(0.9,0)=0.7974>0.7629=W(1,0)$ at $T=10$, and $W(0.8,0)=0.8284>W(1,0)$ already at $T=2$.
+
+\emph{Replication note (recorded for completeness, not as a hedge --- the falsification stands
+on the re-verified numbers above):} one hunter figure did not reproduce, the ``max over the
+entire $k_{\mathrm{piv}}=0$ line $=0.9378$''. On an 11-point $k_{\mathrm{type}}$ grid the line
+max is $0.8284$ (so $W(1,0.2)$ does beat every coarse-grid $k_{\mathrm{piv}}=0$ point), but
+refining the line yields $W(0.85,0)=1.0313$ and $W(0.8625,0)=1.0788$, both above $W(1,0.2)$,
+and a $21\times 21$ scan with local refinement places this instance's global argmax at
+$(0.8625,0)$ --- at $k_{\mathrm{piv}}=0$ after all. What is decisively falsified is therefore
+C2's attainment at $(1,0)$ and the part-(ii) comparative static ``every $k_{\mathrm{piv}}>0$
+point is strictly suboptimal''; whether the weaker ``some $k_{\mathrm{piv}}=0$ point is
+optimal'' survives is C2$'$ below (Conjecture~\ref{conj:decoupledT}; the hunter's 6/8
+line-dominance draws carry the same coarse-grid caveat).
+
+\emph{What survives:} (a) the decoupled corner is a THEOREM at $T=1$
+(Proposition~\ref{prop:bundle}(ii), proved above, untouched); (b) at the v9 anchor calibration
+at $T=10$ it is a numerical fact --- re-verified against
+\texttt{v9\_dynamic\_two\_channel.best\_2d} ($11\times 11$): argmax $(1.00,0.00)$ with
+$W^*=+2.4000,\ +2.3995,\ +2.3855$ at $\xi=0.667,\ 0.70,\ 0.75$. (The anchor lies outside
+A0--A5, R1.2, so this corroborates rather than instantiates.)
+
+\emph{Mechanism (per the hunter; consistent with our re-runs):} at $T\ge 2$ a leakier future
+cuts the waiting option value and re-ignites mid-states --- exactly the continuation channel
+named in C1's obstruction as what breaks the $T=1$ factorization
+$a_{\mathrm{eff}}=a_{\mathrm{mom}}(k_{\mathrm{type}})(1-k_{\mathrm{piv}})$.
+\end{remark}
+
+\begin{restatedobservation}[Observation~\ref{obs:leakagehelps} (O1), restated: positive leakage can strictly help at $T\ge 2$]
+There exist instances satisfying A0--A5, horizons $T\ge 2$, and dials
+$k_{\mathrm{type}}\in[0,1]$, $k_{\mathrm{piv}}>0$ such that
+$W(k_{\mathrm{type}},k_{\mathrm{piv}})>W(k_{\mathrm{type}},0)$ with $s\equiv 1$ at both
+points: positive pivotality leakage is strictly welfare-improving, through the good-coalition
+continuation/waiting-option channel. Verified instance: the C2 counterexample
+(Remark~\ref{rem:falsifiedC2}) at $k_{\mathrm{type}}=1$, $k_{\mathrm{piv}}=0.2$, where $W$
+rises $0.7629\to 0.9902$ for every $T\in\{2,5,10\}$. At $T=1$ this is impossible
+(Proposition~\ref{prop:bundle}(ii): $a_{\mathrm{eff}}$ is nonincreasing in $k_{\mathrm{piv}}$
+and $F$ is nondecreasing), so the phenomenon is strictly dynamic.
+\end{restatedobservation}
+
+\begin{restatedconjecture}[Conjecture~\ref{conj:decoupledT} (C2$'$), restated: narrowed residual conjecture]
+Under A0--A5, for every $T\ge 1$ the decoupled welfare attains its maximum at some point with
+$k_{\mathrm{piv}}=0$ --- with no claim that $(1,0)$ attains it, and no pointwise dominance
+claim in $k_{\mathrm{piv}}$.
+\end{restatedconjecture}
+
+\emph{Status:} theorem at $T=1$ (Proposition~\ref{prop:bundle}(ii)); at the C2-falsifying
+instance the refined scan is consistent with it (argmax $(0.8625,0)$); at risk from the
+hunter's 6/8 genericity report if those violations survive $k_{\mathrm{type}}$-grid
+refinement --- open. \emph{Falsifier:} any A0--A5 instance and $T$ where a fine
+$k_{\mathrm{type}}$ scan certifies
+$\sup_{k_{\mathrm{type}}}W(k_{\mathrm{type}},0)<W(k_{\mathrm{type}}',k_{\mathrm{piv}}')$ for
+some $k_{\mathrm{piv}}'>0$. \emph{Obstruction (unchanged from the original C2):} for $T\ge 2$,
+$k_{\mathrm{piv}}$ feeds back into $a_{\mathrm{mom}}$ through the continuation values
+$\Pi,U$, so the clean factorization used in part (ii) fails state-by-state --- and O1 shows
+the feedback can be strictly beneficial, so no monotone (Topkis-style) comparative static in
+$k_{\mathrm{piv}}$ can hold pointwise; any proof of C2$'$ must compare optima, not paths.
+
+\begin{remark}[R5 --- reading]\label{rem:reading}
+Part (i)'s endpoints are the two channels' pure failure modes derived from primitives: A1
+makes the \emph{pooled} commit option dominated (masking destroys the type news needed to
+ignite), and A2$+$A3 make the \emph{root} mover provably inframarginal under full disclosure
+(leakage destroys the perceived pivotality needed to move first). Part (ii) shows neither
+failure is about \emph{balancing} the channels: given two instruments, the planner sets each
+at its own best corner. The interior $k^*$ exists only because one physical k-anonymity dial
+yokes the two --- exactly the v9 S11 claim, here as a theorem at $T=1$. Beyond one round the
+two extensions now part ways: the bundled-interior extension C1 remains an open conjecture
+(Conjecture~\ref{conj:interiorT}), while the decoupled-corner extension C2 is falsified
+(Remark~\ref{rem:falsifiedC2}) --- at $T\ge 2$ positive leakage can strictly raise welfare
+through the continuation channel (Observation~\ref{obs:leakagehelps}), so the corner result
+is a one-round theorem plus an anchor-calibration numerical fact, not a general-horizon
+truth.
+\end{remark}

@@ -1,0 +1,567 @@
+% ---------------------------------------------------------------------------
+% P1-proof.tex --- appendix: setup, lemmas, proof, and remarks for
+% Proposition \ref{prop:band} (interior masking band in consensus integrity).
+% Statement lives in appendix/P1-statement.tex (included in the paper body).
+% Converted from docs/propositions-workdir/P1-draft.md (content frozen;
+% notation renames only: kappa -> eta, theta -> r per the paper's canon).
+% Two bound-variable renames forced by the notation map, with no change in
+% content: the draft's local eta in the masking lemma is written delta here
+% (eta now denotes the Beta concentration), and the draft's ratio r(c) in the
+% upper-threshold lemma is written lambda(c) (r now denotes robustness).
+% ---------------------------------------------------------------------------
+
+{\sloppy
+\noindent\emph{Provenance.} This appendix formalizes the v2 $c$-axis reversal / v3
+``$k^*$-valley'' claim. Ground truth for the model is
+\texttt{docs/lit/conditional-commitment/}\allowbreak\texttt{runs/numcheck/v3.py} and
+\texttt{v3\_shape.py}; the headline anchor sequence is produced by
+\texttt{v7\_unify.py}~\S0 (see Remarks~\ref{rem:anchors} and~\ref{rem:q1} for its exact
+parameters). The proof below stands without them.\par}
+
+\subsection*{Setup and assumptions}
+
+\paragraph{Model (restricted variant of toy model v3, matching the scripts exactly).}
+A platform chooses a disclosure granularity $k \in [0,1]$ ($k = 1$ full disclosure,
+$k = 0$ full masking). A coalition is \emph{good} with probability $qc$ and \emph{bad}
+with probability $1 - qc$, where $q \in (0,1]$ is authentication accuracy and
+$c \in (0,1)$ is consensus integrity. A good coalition has robustness $r_g \sim F_c$ on
+$[0,1]$ and delivers surplus $V > 0$ unless it unravels; unraveling occurs iff
+$r_g < \hat r(k)$, where $\hat r(k)$ is the strategic activation cutoff induced by
+disclosure level $k$, so the unraveling risk is $\rho(k,c) = F_c(\hat r(k))$. A bad
+coalition imposes loss $L > 0$ unless screened, which happens with probability $s(k)$.
+
+\paragraph{Restriction (linear channels).} Throughout we take the channels in the exact
+form used by the numerical scripts:
+\[
+\hat r(k) = \tau k \quad \text{with } \tau \in (0,1)
+\quad \text{(v2 Lemma~1 transparency cutoff at $k = 1$)},
+\qquad
+s(k) = k.
+\]
+(Toy model v3 allows general $C^1$ increasing channels with these endpoints; we prove
+the result for the linear specification only. See Remark~\ref{rem:restriction}.)
+
+Welfare:
+\begin{equation}
+W(k; q, c) \;=\; qcV\bigl(1 - F_c(\tau k)\bigr) \;-\; (1 - qc)\,L\,(1 - k).
+\tag{W}\label{eq:W-app}
+\end{equation}
+Let $K^*(c) := \operatorname*{arg\,max}_{k \in [0,1]} W(k; q, c)$ (the dependence on
+$q$ is suppressed except in part~(e)). We write ``full disclosure is uniquely optimal
+at $c$'' for $K^*(c) = \{1\}$ and ``masking is optimal at $c$'' for $1 \notin K^*(c)$.
+Define the \emph{masking set}
+\[
+M \;:=\; \{\, c \in (0,1) : 1 \notin K^*(c) \,\},
+\]
+and the \emph{marginal-balance function} (minus the right-hand slope of $W$ at $k = 1$)
+\begin{equation}
+\varphi(c) \;:=\; qcV\tau f_c(\tau) \;-\; (1 - qc)\,L.
+\tag{$\varphi$}\label{eq:phi-app}
+\end{equation}
+$\varphi(c) > 0$ says: at full disclosure, the marginal unraveling loss
+$qcV\tau f_c(\tau)$ exceeds the marginal screening gain $(1 - qc)L$.
+
+\paragraph{Assumptions.}
+\begin{assumptionlist}
+\item[\textbf{(A1) (payoffs).}] $V, L > 0$, $\tau \in (0,1)$, $q \in (0,1]$,
+  $c \in (0,1)$; welfare is \eqref{eq:W-app}.
+\item[\textbf{(A2) (linear channels --- restriction).}] $\hat r(k) = \tau k$,
+  $s(k) = k$, hence $\rho(k,c) = F_c(\tau k)$. This is exactly the specification of
+  \texttt{v3.py}~/ \texttt{v3\_shape.py}.
+\item[\textbf{(A3) (family regularity).}] For each $c \in (0,1)$, $F_c$ is a CDF on
+  $[0,1]$ with density $f_c$ strictly positive and continuous on $(0,1)$, and
+  $(r, c) \mapsto f_c(r)$ is continuous on $(0,1) \times (0,1)$.
+\item[\textbf{(A4) (fragile-end thinness at the cutoff).}] There exists
+  $\bar k \in (0,1)$ with
+  \[
+  \lim_{c \to 0^+} \; c \, \sup_{r \in [\tau\bar k,\, \tau]} f_c(r) \;=\; 0.
+  \]
+  (At very low integrity, the robustness density of good coalitions carries vanishing
+  $c$-weighted mass near the transparency cutoff $\tau$.)
+\item[\textbf{(A5) (robust-end thinness below the cutoff).}]
+  {\sloppy
+  $\lim_{c \to 1^-} S(c) = 0$, where $S(c) := \sup_{r \in (0,\tau]} f_c(r)$, and
+  \textbf{either} (i) $q < 1$, \textbf{or} (ii)
+  \[
+  \limsup_{c \to 1^-} \; \frac{cV\tau S(c)}{(1 - c)L} \;<\; 1.
+  \]
+  (At very high integrity, good coalitions are too robust to unravel: the density on
+  $[0, \tau]$ vanishes --- fast enough, relative to $1 - c$, if $q = 1$.)\par}
+\item[\textbf{(A6) (interior bite --- non-vacuity).}] There exists $c_m \in (0,1)$ with
+  $\varphi(c_m) > 0$, i.e.
+  \[
+  q\, c_m V \tau f_{c_m}(\tau) \;>\; (1 - q c_m)\, L.
+  \]
+\item[\textbf{(A7) (Beta specialization, for parts (d)).}]
+  $F_c = \mathrm{Beta}\bigl(c\eta, (1-c)\eta\bigr)$ on $[0,1]$ with fixed concentration
+  $\eta > 2$ (mean $c$; the family of v2/v3 and of \texttt{v3\_shape.py}). Define
+  \[
+  \bar c \;:=\; \frac{1 + \tau(\eta - 2)}{\eta} \;\in\; \Bigl(\frac{1}{\eta},\, 1\Bigr)
+  \qquad \text{(the concavity threshold)},
+  \]
+  the smallest $c$ at which the Beta mode $(c\eta - 1)/(\eta - 2)$ reaches $\tau$.
+\end{assumptionlist}
+
+Note: \textbf{first-order stochastic dominance of $\{F_c\}$ in $c$ is nowhere used};
+what drives the band is the behavior of the density at and below the cutoff $\tau$ (A4,
+A5, A6). FOSD with fixed support is the natural way such behavior arises
+(Remark~\ref{rem:fosd}). Lemma~\ref{lem:beta-family} below proves that the Beta family
+satisfies A3, A4, and the first part of A5.
+
+\subsection*{Proof of Proposition~\ref{prop:band}}
+
+Throughout fix $q \in (0,1]$ and suppress it except where varied. From
+\eqref{eq:W-app}, since $F_c$ is continuous (A3 gives a density), $W(\cdot\,; c)$ is
+continuous on the compact $[0,1]$; $K^*(c) \neq \emptyset$. This proves
+part~\textbf{(a)}. For $k \in (0,1]$, $W(\cdot\,; c)$ is differentiable with
+\begin{equation}
+W'(k; c) \;=\; (1 - qc)\,L \;-\; qcV\tau f_c(\tau k),
+\tag{D}\label{eq:D}
+\end{equation}
+continuous in $k$ on $(0,1]$ (one-sided at $k = 1$) because $f_c$ is continuous on
+$(0,1)$ and $0 < \tau k \le \tau < 1$. Since $F_c$ is $C^1$ on $(0,1)$,
+$W(\cdot\,; c)$ is absolutely continuous on $[0,1]$ and for $0 \le k \le 1$,
+\begin{equation}
+W(1; c) - W(k; c) \;=\; (1 - qc)\,L\,(1 - k) \;-\; qcV\bigl[F_c(\tau) - F_c(\tau k)\bigr].
+\tag{$\star$}\label{eq:star}
+\end{equation}
+(\eqref{eq:star} is also immediate by direct substitution into \eqref{eq:W-app}.) Note
+$W'(1; c) = -\varphi(c)$.
+
+\begin{lemma}[Low integrity: full disclosure uniquely optimal]\label{lem:low}
+Under A1--A4 there exists $c_1 > 0$ such that for all $c \in (0, c_1)$:
+$W(1; c) > W(k; c)$ for every $k \in [0,1)$, i.e.\ $K^*(c) = \{1\}$.
+\end{lemma}
+
+\begin{proof}
+Let $\bar k$ be as in A4 and write
+$\varepsilon(c) := c \, \sup_{r \in [\tau\bar k,\, \tau]} f_c(r) \to 0$ (A4).
+
+\emph{Case $k \in [\bar k, 1)$.} Then $\tau k \ge \tau\bar k$, so
+\[
+F_c(\tau) - F_c(\tau k)
+= \int_{\tau k}^{\tau} f_c(r)\, dr
+\le \tau (1 - k) \sup_{r \in [\tau\bar k,\, \tau]} f_c(r),
+\]
+using that the integrand is bounded by the sup over
+$[\tau\bar k, \tau] \supseteq [\tau k, \tau]$ and the interval has length
+$\tau(1 - k)$. Substituting into \eqref{eq:star}:
+\[
+W(1; c) - W(k; c) \;\ge\; (1 - k)\bigl[\, (1 - qc)\,L - qV\tau\,\varepsilon(c) \,\bigr].
+\]
+Since $qc \le q \le 1$ and $c \to 0$, $(1 - qc)L \to L > 0$ while
+$qV\tau\,\varepsilon(c) \to 0$; choose $c_1' > 0$ such that for $c < c_1'$ the bracket
+is strictly positive. Then $W(1) > W(k)$ for all $k \in [\bar k, 1)$.
+
+\emph{Case $k \in [0, \bar k]$.} Bound $F_c(\tau) - F_c(\tau k) \le 1$ in
+\eqref{eq:star}:
+\[
+W(1; c) - W(k; c) \;\ge\; (1 - qc)\,L\,(1 - \bar k) - qcV,
+\]
+which is strictly positive once $qcV < (1 - qc)\,L\,(1 - \bar k)$; since the left side
+$\to 0$ and the right side $\to L(1 - \bar k) > 0$ as $c \to 0$, there is $c_1'' > 0$
+below which it holds.
+
+Take $c_1 := \min(c_1', c_1'')$.
+\end{proof}
+
+\begin{lemma}[High integrity: full disclosure uniquely optimal]\label{lem:high}
+Under A1--A3 and A5 there exists $c_2 < 1$ such that for all $c \in (c_2, 1)$:
+$W'(k; c) > 0$ for every $k \in (0,1]$, hence $W(\cdot\,; c)$ is strictly increasing on
+$[0,1]$ and $K^*(c) = \{1\}$.
+\end{lemma}
+
+\begin{proof}
+From \eqref{eq:D}, for every $k \in (0,1]$,
+$W'(k; c) \ge (1 - qc)L - qcV\tau S(c)$ with $S(c) = \sup_{(0,\tau]} f_c$.
+
+\emph{Case A5(i) ($q < 1$).} $(1 - qc)L \ge (1 - q)L > 0$ for all $c$, while
+$qcV\tau S(c) \le V\tau S(c) \to 0$ as $c \to 1$ (A5). So there is $c_2 < 1$ past which
+the lower bound is strictly positive.
+
+\emph{Case A5(ii).} $(1 - qc)L \ge (1 - c)L$ (since $q \le 1$). By A5(ii) there are
+$\delta > 0$ and $c_2 < 1$ with $cV\tau S(c) \le (1 - \delta)(1 - c)L$ for
+$c \in (c_2, 1)$; then
+$W'(k; c) \ge (1 - c)L - q(1 - \delta)(1 - c)L \ge \delta(1 - c)L > 0$.
+
+A continuous function with strictly positive derivative on $(0,1]$ is strictly
+increasing on $[0,1]$ (absolute continuity, noted above), so the unique maximizer is
+$k = 1$.
+\end{proof}
+
+\begin{lemma}[Intermediate integrity: masking strictly optimal]\label{lem:mask}
+Under A1--A3 and A6: $1 \notin K^*(c_m)$.
+\end{lemma}
+
+\begin{proof}
+By \eqref{eq:D} and A6, $W'(1; c_m) = -\varphi(c_m) < 0$. $W'(\cdot\,; c_m)$ is
+continuous on $(0,1]$, so there is $\delta \in (0,1)$ with $W' < 0$ on
+$[1 - \delta, 1]$; integrating,
+$W(1 - \delta; c_m) - W(1; c_m) = -\int_{1-\delta}^{1} W' > 0$. Hence $k = 1$ is not a
+maximizer.
+\end{proof}
+
+\begin{proof}[Proof of parts (b) and (c)]
+Part (b) is Lemmas~\ref{lem:low} and~\ref{lem:high}. For (c):
+Lemma~\ref{lem:mask} gives $c_m \in M$, so $M \neq \emptyset$ and
+$c_{\mathrm{lo}} = \inf M \le c_m \le \sup M = c_{\mathrm{hi}}$. Lemma~\ref{lem:low}
+gives $M \cap (0, c_1) = \emptyset$, so $c_{\mathrm{lo}} \ge c_1 > 0$;
+Lemma~\ref{lem:high} gives $M \cap (c_2, 1) = \emptyset$, so
+$c_{\mathrm{hi}} \le c_2 < 1$. If $c < c_{\mathrm{lo}}$ then $c \notin M$ (by
+definition of the infimum no element of $M$ lies below $c_{\mathrm{lo}}$), i.e.\
+$1 \in K^*(c)$; symmetrically for $c > c_{\mathrm{hi}}$. Uniqueness on
+$(0, c_1) \cup (c_2, 1)$ is the uniqueness in
+Lemmas~\ref{lem:low}--\ref{lem:high}.
+\end{proof}
+
+\begin{lemma}[The Beta family satisfies A3, A4, and the first part of A5]
+\label{lem:beta-family}
+Let $F_c = \mathrm{Beta}(a, b)$ with $a = c\eta$, $b = (1 - c)\eta$, $\eta > 2$ (A7).
+Then A3 holds; A4 holds for every $\bar k \in (0,1)$, with
+$\sup_{[\tau\bar k,\, \tau]} f_c(r) \to 0$ (not merely $c \cdot \sup \to 0$); and
+$S(c) = \sup_{(0,\tau]} f_c(r) \to 0$ as $c \to 1^-$. Moreover the A5(ii) ratio has the
+explicit limit
+\begin{equation}
+\limsup_{c \to 1^-} \; \frac{cV\tau S(c)}{(1 - c)L}
+\;=\; \frac{\eta V \tau^{\eta}}{(1 - \tau)L}.
+\tag{A5$'$}\label{eq:A5prime}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Write $f_c(r) = r^{a-1}(1 - r)^{b-1}/B(a, b)$,
+$B(a, b) = \Gamma(a)\Gamma(b)/\Gamma(\eta)$ (using $a + b = \eta$). Joint continuity
+and positivity on $(0,1)^2$ is standard (continuity of $\Gamma$ on $(0,\infty)$ and of
+powers); A3 holds.
+
+\emph{A4.} Fix $\bar k \in (0,1)$ and take $c < \min(1/\eta, 1/2)$, so $a < 1$ and
+$b > \eta/2 \ge 1$. For $r \in [\tau\bar k, \tau]$:
+$r^{a-1} \le (\tau\bar k)^{a-1} \le (\tau\bar k)^{-1}$ (exponent negative,
+$r \ge \tau\bar k$, and $(\tau\bar k)^{a-1} \le (\tau\bar k)^{-1}$ since
+$\tau\bar k < 1$ and $a > 0$), and $(1 - r)^{b-1} \le 1$ ($b \ge 1$, $1 - r \le 1$). So
+$\sup_{[\tau\bar k,\, \tau]} f_c \le (\tau\bar k)^{-1}/B(a, b)$. Lower-bound $B$: with
+$m := \min_{x \in [1,2]} \Gamma(x) > 0$, $\Gamma(a) = \Gamma(a + 1)/a \ge m/a$ for
+$a \in (0,1)$; and
+$\Gamma(b)/\Gamma(\eta) \ge \gamma_0 := \min_{x \in [\eta/2,\, \eta]}
+\Gamma(x)/\Gamma(\eta) > 0$ for $c \le 1/2$. Hence $B(a, b) \ge m\gamma_0/(c\eta)$ and
+\[
+\sup_{[\tau\bar k,\, \tau]} f_c(r)
+\;\le\; \frac{c\eta}{m \gamma_0 \tau \bar k}
+\;\to\; 0 \quad \text{as } c \to 0^+.
+\]
+
+\emph{A5 first part and \eqref{eq:A5prime}.} Take $c$ close enough to $1$ that $a > 1$
+and $b < 1$. On $(0, \tau]$: $(a-1)/r - (b-1)/(1-r) > 0$ (both terms positive), so
+$f_c$ is strictly increasing there and $S(c) = f_c(\tau)$. By the same $\Gamma$ bounds
+with the roles of $a, b$ swapped, $B(a, b) \ge m\gamma_1/((1 - c)\eta)$ with
+$\gamma_1 := \min_{x \in [\eta/2,\, \eta]} \Gamma(x)/\Gamma(\eta) > 0$, so
+$S(c) \le (1 - c)\eta\, \tau^{a-1}(1 - \tau)^{b-1}/(m\gamma_1) \to 0$ (the powers stay
+bounded: $\tau^{a-1} \le 1$ for $a \ge 1$, $(1 - \tau)^{b-1} \le (1 - \tau)^{-1}$). For
+the exact limit: as $c \to 1^-$, $\Gamma(b) \sim 1/b$ ($\Gamma(b) = \Gamma(b + 1)/b$,
+$\Gamma(b + 1) \to 1$), $\Gamma(a) \to \Gamma(\eta)$, so
+$B(a, b) \sim 1/b = 1/((1 - c)\eta)$ and
+\[
+S(c) = f_c(\tau) \;\sim\; (1 - c)\,\eta\,\frac{\tau^{\eta - 1}}{1 - \tau},
+\]
+whence $cV\tau S(c)/((1 - c)L) \to \eta V \tau^{\eta}/((1 - \tau)L)$, which is
+\eqref{eq:A5prime}.
+\end{proof}
+
+\noindent (Thus under A7 with $q < 1$, A5(i) applies with no further condition; if
+$q = 1$, A5(ii) holds iff $\eta V \tau^{\eta} < (1 - \tau)L$. See
+Remark~\ref{rem:q1}.)
+
+\begin{lemma}[Beta: strict log-concavity of the marginal-balance ratio --- part (d1)]
+\label{lem:logconcave}
+Under A7, $g(c) := \log\bigl[\, qcV\tau f_c(\tau) \,/\, ((1 - qc)L) \,\bigr]$ is
+strictly concave on $(0,1)$.
+\end{lemma}
+
+\begin{proof}
+With $a = c\eta$, $b = (1 - c)\eta$:
+\[
+g(c) = \mathrm{const} + \log c + (c\eta - 1)\log\tau + ((1 - c)\eta - 1)\log(1 - \tau)
+- \log B(c\eta, (1 - c)\eta) - \log(1 - qc).
+\]
+The two power terms are affine in $c$ (second derivative $0$). Using
+$\log B(a, b) = \log\Gamma(c\eta) + \log\Gamma((1 - c)\eta) - \log\Gamma(\eta)$ and
+$\frac{d^2}{dx^2}\log\Gamma(x) = \psi_1(x)$ (trigamma), the chain rule gives
+$\frac{d^2}{dc^2}\log B = \eta^2\psi_1(c\eta) + \eta^2\psi_1((1 - c)\eta)$. Also
+$\frac{d^2}{dc^2}\bigl[-\log(1 - qc)\bigr] = q^2/(1 - qc)^2$ and
+$\frac{d^2}{dc^2}\log c = -1/c^2$. Hence
+\[
+g''(c) = -\frac{1}{c^2} - \eta^2\psi_1(c\eta) - \eta^2\psi_1((1 - c)\eta)
++ \frac{q^2}{(1 - qc)^2}.
+\]
+Two elementary facts close the sign. First,
+$\psi_1(x) = \sum_{n \ge 0} (x + n)^{-2} > x^{-2}$ for $x > 0$ (the $n = 0$ term
+alone), so $\eta^2\psi_1((1 - c)\eta) > \eta^2/((1 - c)\eta)^2 = 1/(1 - c)^2$. Second,
+$1 - qc \ge q(1 - c)$ for $q \le 1$ (equivalent to $1 - q \ge 0$), so
+$q^2/(1 - qc)^2 \le q^2/(q^2(1 - c)^2) = 1/(1 - c)^2$. Therefore
+\[
+g''(c) < -\frac{1}{c^2} - \eta^2\psi_1(c\eta) - \frac{1}{(1 - c)^2}
++ \frac{1}{(1 - c)^2} = -\frac{1}{c^2} - \eta^2\psi_1(c\eta) < 0.
+\qedhere
+\]
+\end{proof}
+
+\noindent Since $\varphi(c) > 0 \iff g(c) > 0$ and $g$ is strictly concave and
+continuous, $\{\varphi > 0\}$ is the intersection of $(0,1)$ with an open interval; by
+A6 it is nonempty and contains $c_m$. Write it $(c_-, c_+)$. This proves
+part~\textbf{(d1)}.
+
+\begin{lemma}[Beta: strict concavity of $W$ in $k$ on the upper shoulder --- part (d2)]
+\label{lem:concave}
+Under A7, for every $c \in [\bar c, 1)$: $f_c$ is strictly increasing on $(0, \tau)$
+with $f_c(0^+) = 0$; consequently $W(\cdot\,; c)$ is strictly concave on $[0,1]$,
+$K^*(c) = \{k^*(c)\}$ is a singleton with $k^*(c) > 0$, and
+$k^*(c) < 1 \iff \varphi(c) > 0$, in which case $k^*(c)$ solves the FOC
+$qcV\tau f_c(\tau k^*) = (1 - qc)L$.
+\end{lemma}
+
+\begin{proof}
+For $c \ge \bar c$, $a = c\eta \ge 1 + \tau(\eta - 2) > 1$ (definition of $\bar c$;
+$\eta > 2$). On $(0,1)$,
+\[
+\frac{f_c'(r)}{f_c(r)} = \frac{a - 1}{r} - \frac{b - 1}{1 - r}.
+\]
+If $b \le 1$, both terms are positive on $(0, \tau]$, so $f_c' > 0$ there. If $b > 1$,
+$f_c'(r) > 0$ iff $r < m_c := (a - 1)/(a + b - 2) = (c\eta - 1)/(\eta - 2)$, and
+$c \ge \bar c \iff m_c \ge \tau$; so $f_c' > 0$ on $(0, \tau)$ (at $r = \tau = m_c$ the
+derivative is $0$, harmless). Also $f_c(0^+) = 0$ because $a - 1 > 0$ makes
+$r^{a-1} \to 0$ while $(1 - r)^{b-1}/B$ stays bounded near $0$.
+
+By \eqref{eq:D}, $W'(k; c) = (1 - qc)L - qcV\tau f_c(\tau k)$ is then strictly
+decreasing in $k$ on $(0,1]$ wherever $\tau k < \tau$ and non-increasing at the
+endpoint, with $W'(0^+; c) = (1 - qc)L > 0$. A continuous function on $[0,1]$ whose
+derivative exists and is strictly decreasing on $(0,1)$ is strictly concave; its
+maximizer is unique. Since $W'(0^+) > 0$, $k^*(c) > 0$. If $\varphi(c) \le 0$, then
+$W'(1) = -\varphi(c) \ge 0$ and by strict monotonicity of $W'$, $W'(k) > 0$ for all
+$k < 1$: $W$ is strictly increasing, $k^*(c) = 1$. If $\varphi(c) > 0$, then
+$W'(1) < 0 < W'(0^+)$, and by continuity and strict monotonicity of $W'$ on $(0,1]$
+there is a unique root $k^* \in (0,1)$, the unique maximizer of the strictly concave
+$W$; the root condition is exactly the stated FOC.
+\end{proof}
+
+\begin{lemma}[Sharp upper threshold and continuity at the upper edge --- part (d3)]
+\label{lem:upper}
+Under A7, A5(i) or (ii), and A6, suppose $c_+ > \bar c$. Then
+$c_{\mathrm{hi}} = c_+ < 1$, $\bigl( \max(\bar c, c_-),\, c_+ \bigr) \subseteq M$, the
+maximizer $k^*(\cdot)$ is continuous on $\bigl( \max(\bar c, c_-),\, c_+ \bigr)$, and
+$k^*(c) \to 1$ as $c \uparrow c_+$.
+\end{lemma}
+
+\begin{proof}
+\emph{Location of the threshold.} By Lemma~\ref{lem:high}, for $c \in (c_2, 1)$ we have
+$W'(1; c) > 0$, i.e.\ $\varphi(c) < 0$; hence $c_+ \le c_2 < 1$. By
+Lemma~\ref{lem:concave}, for $c \in [\bar c, 1)$:
+$c \in M \iff \varphi(c) > 0 \iff c \in (c_-, c_+)$ (Lemma~\ref{lem:logconcave}). Since
+$c_+ > \bar c$, the set $M \cap [\bar c, 1)$ equals $[\bar c, 1) \cap (c_-, c_+)$,
+which contains the nonempty interval $\bigl( \max(\bar c, c_-),\, c_+ \bigr)$; in
+particular it contains points arbitrarily close to $c_+$ from below and no point
+$\ge c_+$. Any other element of $M$ lies in $(0, \bar c) \subset (0, c_+)$. Hence
+$\sup M = c_+$, i.e.\ $c_{\mathrm{hi}} = c_+$.
+
+\emph{Interior solution and continuity.} For
+$c \in \bigl( \max(\bar c, c_-),\, c_+ \bigr)$, Lemma~\ref{lem:concave} gives the
+unique interior maximizer $k^*(c) \in (0,1)$ solving
+$f_c(\tau k^*(c)) = \lambda(c) := (1 - qc)L/(qcV\tau)$. Continuity of $k^*$ on this
+interval: if $c_n \to c$ in the interval and (by compactness, along a subsequence)
+$k^*(c_n) \to \tilde k \in [0,1]$, two boundary cases are excluded. (i) $\tilde k = 0$
+is impossible: for $c$ in a compact neighborhood $[\bar c, c_+] \subset (0,1)$,
+$a = c\eta \ge 1 + \alpha$ with $\alpha := \tau(\eta - 2) > 0$, and $B(a, b)$ is
+bounded below by a positive constant (continuity and positivity of $B$ on the compact
+parameter set), while $(1 - r)^{b-1} \le (1 - \tau)^{b-1}$ is bounded above for
+$r \le \tau$; hence $f_c(r) \le C\, r^{\alpha}$ uniformly on that neighborhood, so
+$f_{c_n}(\tau k^*(c_n)) \to 0$ if $k^*(c_n) \to 0$, contradicting
+$f_{c_n}(\tau k^*(c_n)) = \lambda(c_n) \ge \lambda(c_+) > 0$ ($\lambda$ is strictly
+decreasing in $c$, and $1 - qc_+ > 0$ because $c_+ < 1$ and $q \le 1$). (ii) Otherwise
+$\tilde k \in (0,1]$ and joint continuity of $f$ (A3, point $(\tau\tilde k, c)$ with
+$\tau\tilde k \in (0, \tau] \subset (0,1)$) gives $f_c(\tau\tilde k) = \lambda(c)$;
+since $f_c$ is strictly increasing on $(0, \tau]$ (Lemma~\ref{lem:concave}) the
+solution is unique, so $\tilde k = k^*(c)$: every convergent subsequence has the same
+limit, proving continuity.
+
+\emph{Closing of the band.} Let $c_n \uparrow c_+$. As above, along any subsequence
+$k^*(c_n) \to \tilde k \in (0,1]$ with $f_{c_+}(\tau\tilde k) = \lambda(c_+)$. But
+$\varphi(c_+) = 0$ (continuity of $\varphi$ and $c_+$ is the right endpoint of
+$\{\varphi > 0\}$) means $f_{c_+}(\tau) = \lambda(c_+)$. Strict monotonicity of
+$f_{c_+}$ on $(0, \tau]$ ($c_+ > \bar c$) forces $\tau\tilde k = \tau$, i.e.\
+$\tilde k = 1$. Hence $k^*(c) \to 1$ as $c \uparrow c_{\mathrm{hi}}$.
+\end{proof}
+
+\begin{lemma}[Comparative statics in $q$ --- part (e)]\label{lem:compstat}
+Under A1--A3, for $q < q' \le 1$: (i) $M(q) \subseteq M(q')$; (ii) for every $c$,
+$\max K^*(c; q') \le \min K^*(c; q)$.
+\end{lemma}
+
+\begin{proof}
+(i) Let $c \in M(q)$: there is $k < 1$ with $W(k; q, c) > W(1; q, c)$, which by
+\eqref{eq:star} is
+\[
+qcV\bigl[F_c(\tau) - F_c(\tau k)\bigr] \;>\; (1 - qc)\,L\,(1 - k).
+\]
+The left side is strictly increasing in $q$ (the bracket is $> 0$ since $f_c > 0$ and
+$k < 1$) and the right side strictly decreasing in $q$ (derivative $-cL(1 - k) < 0$).
+So the inequality holds at $q'$, giving $c \in M(q')$. The threshold monotonicities
+follow, when $M(q) \neq \emptyset$, from $\inf$ over a larger nonempty set being
+smaller and $\sup$ larger.
+
+(ii) $W$ has strictly decreasing differences in $(k; q)$: for $k < k'$,
+\begin{align*}
+W(k'; q, c) - W(k; q, c)
+&= -qcV\bigl[F_c(\tau k') - F_c(\tau k)\bigr] + (1 - qc)\,L\,(k' - k),\\
+\frac{\partial}{\partial q}\bigl[ W(k'; q, c) - W(k; q, c) \bigr]
+&= -cV\bigl[F_c(\tau k') - F_c(\tau k)\bigr] - cL\,(k' - k) \;<\; 0,
+\end{align*}
+both terms strictly negative ($F_c$ strictly increasing on $(0,1)$ by $f_c > 0$). Now
+the standard Topkis-type argument: take $k \in K^*(c; q)$, $k' \in K^*(c; q')$ and
+suppose $k' > k$. Optimality at $q$ gives $W(k'; q) - W(k; q) \le 0$; strictly
+decreasing differences give $W(k'; q') - W(k; q') < W(k'; q) - W(k; q) \le 0$,
+contradicting optimality of $k'$ at $q'$. Hence every element of $K^*(c; q')$ is $\le$
+every element of $K^*(c; q)$.
+\end{proof}
+
+\medskip
+\noindent Parts (a)--(e) of Proposition~\ref{prop:band} are now proved: (a) the opening
+paragraph of the proof; (b) Lemmas~\ref{lem:low}--\ref{lem:high}; (c)
+Lemma~\ref{lem:mask} plus the assembly in the proof of parts (b) and (c); (d1)
+Lemma~\ref{lem:logconcave}; (d2) Lemma~\ref{lem:concave}; (d3) Lemma~\ref{lem:upper};
+(e) Lemma~\ref{lem:compstat}; and Lemma~\ref{lem:beta-family} certifies that under A7
+the family-level assumptions A3, A4 hold automatically and A5 holds with $q < 1$ (or
+via \eqref{eq:A5prime} when $q = 1$). \hfill$\qedsymbol$
+
+\subsection*{Remarks}
+
+\begin{remark}[What was restricted relative to the numerics/memos]\label{rem:restriction}
+(i) \emph{Linear channels} $\hat r(k) = \tau k$, $s(k) = k$ (A2). This is exactly the
+specification of the ground-truth scripts \texttt{v3.py} and \texttt{v3\_shape.py}, so
+nothing is lost relative to the numerical claim; toy model v3's prose allows general
+$C^1$ increasing channels, for which Lemmas~\ref{lem:low}--\ref{lem:mask} (the band)
+generalize directly (replace the $\tau(1 - k)$ bounds by
+$\hat r(1) - \hat r(k) \le \hat r'_{\max}(1 - k)$ and require $s'$ bounded below), but
+parts (d1)--(d3) use linearity through $\varphi$ and the Beta algebra.
+(ii) \emph{Beta family} only for the sharp-threshold parts (d); the band itself,
+(a)--(c), holds for any family satisfying A3--A6. (iii) \emph{Static problem}: $k$ is
+chosen once; no dynamics, no finite-$N$ progress-bar effects (anchor paper \S4
+qualifier~4 --- the durable large-population claim is exactly the static one proved
+here).
+\end{remark}
+
+\begin{remark}[Mapping to the numerical anchors]\label{rem:anchors}
+\emph{Provenance of the headline anchor (re-verified by re-running the scripts).} The
+sequence $k^*(c) = 1, 1, 1, 0.62, 0.68, 0.75, 0.85$ is produced by
+\texttt{v7\_unify.py} (section~0, the disclosure-facet row
+\texttt{argmax\_axis("k}, $\cdot$\texttt{)}) at $q = 1.0$, on the $c$-grid
+$\{0.1, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9\}$, with
+$(V, L, \tau, \eta) = (1, 1.2, 0.7, 8)$ and custody/specification pinned at
+$\gamma = \sigma = 0$ --- which leaves a $c$-dependent effective surplus
+$V - \mathrm{indet}(0, c)$ in place of $V$ ($= 0.826$ at $c = 0.6$; v7's
+fixed-$V' = 0.826$ v3-check row differs only in the tail, $\ldots, 0.77, 0.87$). It is
+\textbf{not} a \texttt{v3\_shape.py} output: that script's closest row ($q = 1.0$, same
+$(V, L, \tau, \eta)$, $V = 1$ unshifted, $c$-grid $0.05, \ldots, 0.95$) is
+$1, 1, 1, 0.51, 0.60, 0.74, 0.91$ --- the same valley shape, different numbers.
+Crucially, $q = 1.0$ at these parameters is exactly where the proposition's upper
+threshold does \textbf{not} bite: A5(ii) requires $\eta V \tau^{\eta}/(1 - \tau) < L$,
+and $8 \cdot 0.7^{8}/0.3 \approx 1.537 > 1.2 = L$ (still $\approx 1.270 > 1.2$ with
+v7's effective $V' = 0.826$). So at the anchor's own parameter point
+$c_{\mathrm{hi}} < 1$ is provably false in the model, the numerics agree ($k^*$ stays
+interior at high $c$: anchor $k^*(0.9) = 0.85$; in this paper's exact model
+$k^*(0.95) \approx 0.91$ at $q = 1$), and the headline anchor illustrates the band's
+existence (b)--(c) and the FOC shape (d2) --- \textbf{not} part (d3)'s strict
+interiority of the upper threshold, which at $q = 1$ requires A5(ii) and fails here
+(Remark~\ref{rem:q1}).
+
+The upper-threshold half, scoped to $q < 1$, is exhibited at $q = 0.95$
+(\texttt{v3\_shape.py}, same $(V, L, \tau, \eta)$, this paper's exact model):
+$\bar c = (1 + 0.7 \cdot 6)/8 = 0.65$; numerically
+$\{\varphi > 0\} \approx (0.539, 0.952)$ and $M \approx (0.495, 0.952)$. So
+$c_+ \approx 0.952 > \bar c = 0.65$ --- the hypothesis of (d3) holds --- and indeed
+$c_{\mathrm{hi}} = c_+$ to grid precision, with $k^*(c) \to 1$ continuously from below
+($k^*$ rises $0.56, 0.60, 0.68, 0.78, 0.90$ across $c = 0.5, \ldots, 0.9$). The lower
+edge is \textbf{discontinuous}: $M$ begins at $c \approx 0.495$ while $\varphi > 0$
+only from $c \approx 0.539$ --- the global maximizer jumps from the corner $k = 1$ to
+an interior local maximum while $W'(1) > 0$ still holds. This is why
+Proposition~\ref{prop:band} characterizes $c_{\mathrm{hi}}$ by the FOC
+($\varphi(c_{\mathrm{hi}}) = 0$) but $c_{\mathrm{lo}}$ only as $\inf M$: at the lower
+edge no first-order condition at the corner can locate the threshold. The $q$-anchor
+$k^*(q) = 1.00 \to 0.68$ over $q = 0.4, \ldots, 1.0$ at $c = 0.7$ is again
+\texttt{v7\_unify.py} (section~8, same $\mathrm{indet}$ shift); in this paper's exact
+model the row is $1.00, 1.00, 0.87, 0.74, 0.65$ --- the same monotone decline, part
+(e)'s monotonicity. A6 at $q = 0.95$ and these parameters:
+$\varphi(0.7) \approx +0.70 > 0$.~\checkmark
+\end{remark}
+
+\begin{remark}[The $q = 1$ upper edge]\label{rem:q1}
+Under A7 with $q = 1$, A5(ii) reduces by \eqref{eq:A5prime} to
+$\eta V \tau^{\eta} < (1 - \tau)L$. At the script parameters
+$\eta V \tau^{\eta}/(1 - \tau) \approx 1.537 > L = 1.2$, so the condition
+\textbf{fails}: at $q = 1$ our proof does not deliver $c_{\mathrm{hi}} < 1$, and the
+numerics agree --- masking persists for all high $c$ tested ($k^* \approx 0.91$ at
+$c = 0.95$ in this paper's exact model; $k^*(0.9) = 0.85$ in the headline anchor row,
+which is itself computed at $q = 1.0$, Remark~\ref{rem:anchors}). To state it plainly:
+at $q = 1$ with the anchor parameters, $c_{\mathrm{hi}} < 1$ is false in the model ---
+masking persists for all $c$ below $1$ once the band opens --- and that is consistent
+with the numerics, not contradicted by them. The strict interiority of the upper
+threshold is therefore unconditional for $q < 1$ and parameter-conditional at $q = 1$;
+since the headline anchor sits at $q = 1$ with parameters where A5(ii) fails, the
+$c_{\mathrm{hi}} < 1$ half of the proposition is scoped to $q < 1$ there and is
+\textbf{not} claimed at the anchor point. This is a boundary of the claim, not
+a gap in the proof.
+\end{remark}
+
+\begin{remark}[Role of FOSD]\label{rem:fosd}
+First-order stochastic dominance of $\{F_c\}$ in $c$ is \emph{not} an assumption of
+Proposition~\ref{prop:band}. The band is driven by the $c$-profile of the density at
+and below the unraveling cutoff $\tau$: thin at low $c$ (A4 --- under fixed-support
+FOSD, low-$c$ mass sits near $0$, far below $\tau$), thin at high $c$ (A5 --- mass sits
+above $\tau$), thick somewhere in the middle (A6 --- typical robustness near $\tau$).
+FOSD with fixed support is the economic mechanism that makes A4--A6 natural, and the
+Beta (mean-$c$) family instantiates it; but a non-FOSD family with the same
+cutoff-density profile would produce the same band. The v3 memo's triangular
+counterexample ($F_c(r) = r^2/r_c^2$ on support $[0, r_c]$, $r_c = r_{\max} c$) is
+excluded by \textbf{A3, not A4}: its density $f_c(r) = 2r/r_c^2$ is identically $0$ on
+$(r_c, 1)$, so A3's strict positivity on $(0,1)$ fails (and $(r, c) \mapsto f_c(r)$
+jumps from $2/r_c$ to $0$ at the moving support edge $r = r_c$, so A3's joint
+continuity fails too). The A4 limit, by contrast, \textbf{holds} --- vacuously: for
+$c < \tau\bar k/r_{\max}$ the entire support $[0, r_{\max} c]$ lies below the window
+$[\tau\bar k, \tau]$, so $\sup_{[\tau\bar k,\, \tau]} f_c = 0$ and
+$c \cdot \sup_{[\tau\bar k,\, \tau]} f_c = 0 \to 0$. (An earlier version of this remark
+misattributed the exclusion to A4.) The moving support $r_c \propto c$ is what inverts
+the within-family shape $k^*(c)$, and it is precisely what A3's full-support positivity
+rules out.
+\end{remark}
+
+\paragraph{Conjectures.}
+Conjecture~\ref{conj:connected} in the main text (connectedness of $M$) states that $M$
+is an interval, i.e.\ $M = (c_{\mathrm{lo}}, c_{\mathrm{hi}})$ exactly. Proved here:
+$M \subseteq [c_{\mathrm{lo}}, c_{\mathrm{hi}}] \subset (0,1)$ with masking at $c_m$
+and, under (d3), the entire upper shoulder
+$\bigl( \max(\bar c, c_-),\, c_+ \bigr) \subseteq M$. Not proved: that $M$ has no gaps
+below $\bar c$. Numerically $M$ is an interval at all tested parameters (grid check,
+\texttt{v3\_shape.py} family). What would close it: quasi-concavity in $c$ of
+$c \mapsto \sup_{k < 1}\, \bigl[ W(k; c) - W(1; c) \bigr]$; the natural attack
+(Pr\'ekopa~/ joint log-concavity of $(c, r) \mapsto f_c(r)$) fails because
+$\log f_c(r)$ contains bilinear terms $c\eta \log r$ whose Hessian is indefinite, and a
+sup of quasi-concave functions need not be quasi-concave. A workable route may be the
+variation-diminishing property of the Beta kernel (sign-regularity of
+$(c, r) \mapsto f_c(r)$), which would bound the sign changes of
+$c \mapsto W(k; c) - W(1; c)$ uniformly in $k$.
+
+\begin{conjecture}[Monotone reopening]\label{conj:monotone}
+On $\bigl( \max(\bar c, c_-),\, c_{\mathrm{hi}} \bigr)$, $k^*(c)$ is strictly
+increasing (the band closes monotonically).
+\end{conjecture}
+
+\noindent The FOC gives
+$dk^*/dc \propto \partial/\partial c\,\bigl[ qcV f_c(\tau k) \bigr] - (-qL)$-type
+expressions whose sign requires $\partial f_c(r)/\partial c$ at $r = \tau k^*$, not
+signed in general. Numerically robust at all tested parameters.
+
+\begin{remark}[Interpretation of the FOC]\label{rem:foc}
+Part (d2)'s first-order condition $qcV\tau f_c(\tau k^*) = (1 - qc)L$ is the v3 memo's
+``marginal unraveling loss $=$ marginal screening gain'' line, with the linear-channel
+substitution made explicit; $\varphi(c)$ is this balance evaluated at full disclosure,
+and the band is precisely the integrity range where, at $k = 1$, protecting good
+coalitions at the margin is worth more than the last unit of screening.
+\end{remark}

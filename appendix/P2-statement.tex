@@ -1,0 +1,52 @@
+% ------------------------------------------------------------------
+% P2-statement.tex --- Proposition \ref{prop:selection} ($\lambda$-free
+% selection: masked momentum and the contested-regime masking
+% advantage) and the diagonal-ignition conjecture
+% (Conjecture \ref{conj:DI}). Statement only; the full setup and proof
+% are in appendix/P2-proof.tex. Converted from
+% docs/propositions-workdir/P2-draft.md (frozen content). Notation:
+% the draft's V_1 is written V; \pi_{\mathrm{m}} and \pi_{\mathrm{r}}
+% abbreviate the draft's \pi_{masked} and \pi_{rev}.
+% ------------------------------------------------------------------
+
+\noindent\textbf{Notation.} At support count $m$ write $g(m) := K - m$ (gap) and $n(m) := N - m$ (uncommitted agents). $A[m,h] \in \{0,1\}$ is the action selected by the masked ($\lambda$-free CvD/Laplacian) rule at state $(m,h)$; $\pi_{\mathrm{m}}$ and $\pi_{\mathrm{r}}$ are the clearing probabilities $P_c[0,T]$ of the masked and revealed games, and $\mathrm{Adv} := \pi_{\mathrm{m}} - \pi_{\mathrm{r}}$. $q_j(n) := \int_0^1 \operatorname{Binom}(n-1,\, p\alpha)(j)\, d\alpha$ is the Laplacian co-mover law. \emph{DI (diagonal ignition)} is the property that the masked rule selects commit at every diagonal state: $A[K-g,\, g] = 1$ for $g = 1, \dots, K$. The momentum bound is $\widehat P(\gamma) := \prod_{i=1}^{\gamma} \bigl( 1 - (1-p)^{N-K+i} \bigr)$, with $\widehat P(0) := 1$.
+
+\medskip
+\noindent\textbf{Assumptions.}
+\begin{itemize}
+\item \textbf{(A1) (primitives).} $N \ge 2$, $2 \le K \le N$, $T \ge K$, $p \in (0,1)$, $V > \kappa > 0$, $L_p \ge 0$, $\rho \ge 0$, $\xi \in [0,1]$.
+\item \textbf{(A2) (kernel).} The dynamic game and profile-consistent arrays of the setup (appendix, \S 0.1).
+\item \textbf{(A3) (masked rule).} The exact-integral CvD/Laplacian stage selection (appendix, \S 0.2). At diagonal volunteer's-dilemma states,
+  where strategic complementarities fail, the Laplacian action is adopted as the
+  \emph{definition} of stagewise risk dominance, not invoked as an FMP \S6.4 theorem
+  (see the appendix scoping remark).
+\item \textbf{(A4) (revealed rule).} The pivotality-blend reduced form (appendix, \S 0.3).
+\item \textbf{(A5) (free-riding pays).} $\xi V > V - \kappa$, i.e.\ $\xi > 1 - \kappa/V$.
+\item \textbf{(A6) (contested regime).} $K - 1 \ge \max(1,\, pN)$.
+\item \textbf{(A7) (deadline ignition).} $\xi V \cdot \bigl(1 - q_0(N-K+1)\bigr) < V - \kappa$, where $q_0(n) := \bigl(1 - (1-p)^n\bigr)/(np)$.
+\item \textbf{(A8) (rung-2 ignition, used only for the $K = 2$ part).} With $q_j := q_j(N)$ and $\widehat P(1) := 1 - (1-p)^{N-1}$:
+  \begin{itemize}
+  \item[\textbf{(C2)}] $q_0 \cdot \bigl[\, (V-\kappa+L_p)\cdot \widehat P(1) - L_p + \rho \,\bigr] + q_1 \cdot \rho \;>\; \bigl(\xi V - (V-\kappa)\bigr)\cdot(1 - q_0 - q_1)$;
+  \item[\textbf{(C3)}] $L_p \cdot q_0 + \xi V \cdot (1 - q_0 - q_1) \;\ge\; (V-\kappa)\cdot(1 - q_0)$.
+  \end{itemize}
+\end{itemize}
+A5--A6 are the \textbf{contested-regime} hypotheses (the $\theta$-threshold of part (iv)); A7 is the \textbf{momentum-ignition} hypothesis (the $\theta$-threshold of part (ii)). With the v9 grid map $K(\theta) = \lceil (1-\theta)\cdot N \rceil$, A6 reads: $\theta$ lies below the threshold at which the initial gap exceeds the expected per-period mover count (at the v9 calibration, where $pN = 6$ is an integer: $\theta < 1 - p = 0.4$, i.e.\ exactly $\theta \in \{0.10, 0.20, 0.30\}$ on the grid).
+
+\begin{proposition}[$\lambda$-free selection: masked momentum and the contested-regime advantage]\label{prop:selection}
+Under A1--A3 the masked game and under A1, A2, A4 the revealed game are well-defined, and no rationality parameter appears anywhere; for fixed primitives $\mathrm{Adv}$ is a single number (no $\lambda$-inversion is possible). Moreover:
+\begin{itemize}
+\item[(i)] \textup{(Momentum, conditional form.)} If DI holds, then $\pi_{\mathrm{m}} \ge \widehat P(K) > 0$.
+\item[(ii)] \textup{(Ignition at the last rung; $\theta$-threshold.)} Under A7, the masked rule commits at the deadline-pivotal diagonal state: $A[K-1,\, 1] = 1$. Since $q_0(n)$ is strictly decreasing in $n$, A7 is downward-closed in $\theta$: if it holds at threshold $K$ it holds at every $K' \ge K$, i.e.\ for every harder (lower-$\theta$) market.
+\item[(iii)] \textup{(Momentum, unconditional for $K = 2$.)} Let $K = 2$ and assume A5, A7, A8. Then DI holds --- $A[1,1] = 1$ and $A[0,2] = 1$ --- and therefore
+\[
+\pi_{\mathrm{m}} \;\ge\; \widehat P(2) \;=\; \bigl(1 - (1-p)^{N-1}\bigr)\bigl(1 - (1-p)^N\bigr) \;>\; 0.
+\]
+The hypothesis set is non-vacuous: $(N,K,T,p) = (10, 2, 10, 1/10)$ with the v9 payoffs $(V, \kappa, L_p, \rho, \xi) = (3, 1, 3, 1/20, 4/5)$ satisfies A1, A5, A6, A7, A8 simultaneously (exact margins in the appendix proof, Step 5).
+\item[(iv)] \textup{(Revealed collapse in the contested regime.)} Under A1, A2, A4, A5, A6: $\pi_{\mathrm{r}} = 0$ exactly. In particular at the v9 calibration $(N, p) = (10, 3/5)$, A6 holds iff $K \ge 7$, i.e.\ iff $\theta \in \{0.10, 0.20, 0.30\}$ on the v9 grid.
+\item[(v)] \textup{(Masking advantage.)} Under the hypotheses of (iv) together with DI (or, for $K = 2$, with A7--A8 instead of DI): $\mathrm{Adv} = \pi_{\mathrm{m}} \ge \widehat P(K) > 0$ --- strictly positive on the contested regime. Globally (without A5--A6), under DI: $\mathrm{Adv} \ge \widehat P(K) - 1$. (No claim of $\mathrm{Adv} \ge 0$ outside the contested regime is made: the ground-truth computation exhibits $\mathrm{Adv} \in [-8 \cdot 10^{-4},\, 0)$ on the easy regime; see Remark R4 in the appendix.)
+\end{itemize}
+\end{proposition}
+
+\begin{conjecture}[Diagonal ignition at the v9 calibration]\label{conj:DI}
+At $(N,T,p,V,\kappa,L_p,\rho,\xi) = (10, 10, 3/5, 3, 1, 3, 1/20, 4/5)$ and every $K \in \{3, \dots, 9\}$ of the v9 $\theta$-grid, DI holds at \emph{every} diagonal rung (and, additionally, the masked rule waits at every below-diagonal state). This is verified pointwise by the ground-truth solver at all seven grid points; parts (i) and (v) of Proposition~\ref{prop:selection} then apply at the calibration. What would close it: a proof of the diagonal stage inequality at rungs $g \ge 2$, which requires an upper bound on the on-cone uncommitted value $V_u$ strictly below $\xi V$ by a margin of order $\xi V \cdot (1 - P_c) + \rho$; the crude bound $V_u \le \xi V$ used in the present technique yields a sufficient condition that is strictly negative at the calibration, while the true (verified) deepest-rung stage margin is $+0.417$. See Remark R3 in the appendix.
+\end{conjecture}

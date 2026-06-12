@@ -1,0 +1,303 @@
+% ------------------------------------------------------------------
+% P2-proof.tex --- Appendix: proof of Proposition \ref{prop:selection}
+% ($\lambda$-free selection: masked momentum and the contested-regime
+% masking advantage).
+% Converted from docs/propositions-workdir/P2-draft.md (frozen content;
+% verified by three adversarial reviewers). Notation: the committer's
+% activation value V_1 of the draft is written V throughout, per the
+% paper's canonical notation. Requires amsmath, amssymb, amsthm and the
+% environments lemma, proof, remark, conjecture, assumption defined in
+% the preamble. The formal statement (Proposition \ref{prop:selection})
+% and the diagonal-ignition conjecture (Conjecture \ref{conj:DI}) are
+% in P2-statement.tex.
+% ------------------------------------------------------------------
+
+\subsection*{Setup}
+
+\noindent\emph{Provenance.} This appendix formalizes toy-model v9 \S 2 (S10). Ground truth for the game, the CvD belief, and the advantage decomposition: \texttt{runs/numcheck/v9\_selection\_lambdafree.py} (v9.S10.2, the $p_{\mathrm{opp}}$-consistent CvD belief) and the adversarial re-implementation \texttt{runs/numcheck/v9\_verify\_s10.py}. Selection license: Frankel--Morris--Pauzner (2003, \emph{JET} 108(1):1--44), \S 6.4 / Thm~4 --- scope verified and qualified in Setup \S 0.4 and Remark~R5. No step of the proof appeals to the numerics; script output is used only in the Remarks to map anchors.
+
+\paragraph{0.1 The game (exact formalization of the script kernel).}
+Fix integers $N \ge 2$ (agents), $1 \le K \le N$ (clearing threshold), $T \ge 1$ (horizon), and reals $p \in (0,1)$ (move probability), $V > \kappa > 0$ (cleared value, commitment cost), $L_p \ge 0$ (stranded-commitment loss), $\rho \ge 0$ (per-period decision cost), $\xi \in [0,1]$ (non-excludable share). Write $g(m) := K - m$ (the \emph{gap}) and $n(m) := N - m$ (uncommitted agents) at support count $m$.
+
+\medskip
+\noindent\textbf{State and transitions.} The state is $(m,h)$: $m$ agents committed, $h$ periods remaining. In a period at state $(m,h)$ with $m < K$, each of the $n = n(m)$ uncommitted agents independently receives a move opportunity with probability $p$ and, if moving, plays the common selected commit propensity $a(m,h) \in [0,1]$; the realized number of new commits is $j \sim \operatorname{Binom}(n,\, p \cdot a(m,h))$ and the next state is $(m+j,\, h-1)$. The campaign \emph{clears} when $m \ge K$ (absorbing); it \emph{fails} if $h$ reaches $0$ with $m < K$.
+
+\medskip
+\noindent\textbf{Terminal payoffs} (per agent, as in v6/v7/v9): commit \& clear $V - \kappa$; commit \& fail $-L_p$; wait \& clear $\xi V$; wait \& fail $0$. Each period in which an agent (counterfactually) evaluates her move costs $\rho$ (this flow enters both action values identically and cancels in every comparison below; it survives only inside continuation values).
+
+\medskip
+\noindent\textbf{Profile-consistent arrays.} Given a selected propensity table $a(\cdot,\cdot)$, define by the script's \texttt{propagate} recursion (backward induction in $h$; all references are to row $h-1$, so the recursion is well-founded):
+\begin{itemize}
+\item $P_c[m,h]$ --- clearing probability: $P_c[m,h] = 1$ for $m \ge K$; $P_c[m,0] = 0$ for $m < K$; and for $m < K$, $h \ge 1$, with $b = p \cdot a(m,h)$,
+\[
+P_c[m,h] \;=\; \sum_{j=0}^{n} \operatorname{Binom}(n,b)(j) \cdot \bigl( \mathbf{1}\{m+j \ge K\} + \mathbf{1}\{m+j < K\} \cdot P_c[m+j,\, h-1] \bigr).
+\]
+\item $V_u[m,h]$ --- value of an uncommitted agent under the selected profile: $V_u[\cdot,0] = 0$, and for $m < K$, $h \ge 1$, $V_u[m,h] = a \cdot v_c + (1-a) \cdot v_w$, where $v_c, v_w$ are the commit/wait values computed against co-movers $j \sim \operatorname{Binom}(n-1, b)$ and continuations $P_c[\cdot,h-1]$, $V_u[\cdot,h-1]$ (script lines: \texttt{propagate}). In the masked game $a \in \{0,1\}$, so $V_u[m,h]$ is the selected branch --- $v_c$ if $a = 1$, $v_w$ if $a = 0$ --- evaluated at the selected-profile co-mover law $\operatorname{Binom}(n-1,b)$. The action $a$ is the argmax of the \S 0.2 Laplacian comparison, not of this profile-law pair, so $V_u[m,h]$ can lie strictly below $\max(v_c, v_w)$ (e.g.\ at the v9 calibration, $\theta = 0.30$, state $(6,1)$: commit is selected while the profile-law values are $v_c = 1.950 < v_w = 2.196$). No lemma uses a $V_u = \max$ identity; Lemma~\ref{lem:rung2} propagates the selected branch directly.
+\end{itemize}
+The outcome of interest is $\pi := P_c[0,T]$.
+
+\paragraph{0.2 The masked selection ($\lambda$-free CvD/Laplacian rule).}
+At each $(m,h)$ with $m < K$, $h \ge 1$, the masked mover knows only $(m,h)$ and evaluates commit-vs-wait under the \textbf{$p$-consistent Carlsson--van Damme (Laplacian) belief}: the others' commit \emph{propensity} is $\alpha \sim \mathrm{Uniform}[0,1]$ and the realized co-mover count is $j \sim \operatorname{Binom}(n-1,\, p\alpha)$. The stage values are (script \texttt{laplacian\_vals}, idealized to the exact integral; see Remark~R1 on the script's 51-point quadrature):
+\[
+v_c(m,h) = -\rho + \sum_{j} q_j(n) \cdot U_c(j), \qquad
+v_w(m,h) = -\rho + \sum_{j} q_j(n) \cdot U_w(j),
+\]
+\[
+U_c(j) =
+\begin{cases}
+V - \kappa & \text{if } m+1+j \ge K,\\[2pt]
+(V-\kappa)\cdot P_c[m+1+j,\, h-1] \;-\; L_p\cdot\bigl(1 - P_c[m+1+j,\, h-1]\bigr) & \text{otherwise,}
+\end{cases}
+\]
+\[
+U_w(j) =
+\begin{cases}
+\xi V & \text{if } m+j \ge K,\\[2pt]
+0 & \text{if } m+j < K \text{ and } h-1 = 0,\\[2pt]
+V_u[m+j,\, h-1] & \text{otherwise,}
+\end{cases}
+\]
+where $q_j(n) := \int_0^1 \operatorname{Binom}(n-1,\, p\alpha)(j)\, d\alpha$ is the Laplacian co-mover law. The masked rule selects $a(m,h) = 1$ iff $v_c > v_w$, else $0$ (ties $\to$ wait, as in the script). Continuations $P_c, V_u$ are then propagated under the \emph{selected} propensity (\S 0.1) --- the Laplacian doubt applies to the current period's co-movers only; continuation values are model-consistent. Write $A[m,h]$ for the selected action and $\pi_{\mathrm{m}} := P_c[0,T]$ under this rule ($\pi_{\mathrm{m}}$, the \emph{masked} clearing probability, abbreviates the draft's $\pi_{\text{masked}}$).
+
+\paragraph{0.3 The revealed selection (pivotality revelation, v7 reduced form).}
+In the revealed partition the mover additionally learns her decisiveness. As in v7/v9 this is operationalized (not derived from an extensive form --- see Remark~R2) by the blend (script \texttt{solve\_revealed\_rd}): at $(m,h)$ with gap $g = K-m$,
+\begin{itemize}
+\item \textbf{pivotal action} $a_{\mathrm{marg}} = \mathbf{1}\{\, V - \kappa > \mathrm{wait\_cont} \,\}$, $\mathrm{wait\_cont} = V_u[m,\, h-1]$ ($0$ if $h = 1$);
+\item \textbf{inframarginal action} $a_{\mathrm{inf}} = 0$ iff free-riding pays, i.e.\ iff $\xi V > V - \kappa$ (else $a_{\mathrm{inf}} = 1$);
+\item \textbf{pivotality weight} $w(m,h) = \mathrm{clip}\bigl(\, 1 - (g-1)/\max(1,\, p n),\; [0,1] \,\bigr)$;
+\item selected propensity $a(m,h) = w \cdot a_{\mathrm{marg}} + (1-w) \cdot a_{\mathrm{inf}}$, propagated by the same kernel.
+\end{itemize}
+Write $\pi_{\mathrm{r}} := P_c[0,T]$ under this rule ($\pi_{\mathrm{r}}$, the \emph{revealed} clearing probability, abbreviates the draft's $\pi_{\text{rev}}$). No object in \S 0.1--\S 0.3 contains a rationality parameter: the selection is \textbf{$\lambda$-free by construction}, and for fixed primitives each of $\pi_{\mathrm{m}}$, $\pi_{\mathrm{r}}$ is a single number.
+
+\paragraph{0.4 Selection license (FMP \S 6.4), verified and qualified.}
+Each stage decision in \S 0.2 is a symmetric, \textbf{two-action}, $n$-player game. Frankel--Morris--Pauzner (2003) \S 6.4 characterizes the noise-independent global-game selection in symmetric two-action many-player games as the action that is a best response to a \textbf{uniform belief over the opponents' aggregate action} --- the Laplacian criterion used verbatim in \S 0.2, made $p$-consistent by routing the uniform propensity through the $\operatorname{Binom}(n-1,\, p\alpha)$ movement kernel. Their conditions, checked for this class:
+\begin{itemize}
+\item \emph{Own-action quasiconcavity}: automatic --- with a two-point action set every payoff function is own-action quasiconcave, so FMP Thm~4's quasiconcavity hypothesis is vacuous.
+\item \emph{LP-maximizer}: FMP \S 6.4 (via Lemma~2 / Morris--Ui $p$-dominance) identifies the Laplacian action as the LP-maximizer \textbf{under strategic complementarities}. Our stage differentials $U_c(j) - U_w(j)$ are \emph{not} globally increasing in $j$: at diagonal states (Def.\ \S 0.6) the stage game is volunteer's-dilemma-like (substitutes). Where complementarities hold, the Laplacian action is the FMP-licensed noise-independent selection; where they fail, we adopt the Laplacian action as the \emph{definition} of stagewise risk dominance (the CvD vanishing-noise criterion), exactly as the ground-truth script does. This is a refinement \emph{choice}, cross-validated by an independent $\lambda$-free refinement (potential-maximizer, \texttt{v9\_verify\_s10.py}) that reproduces the same regime split. See Remark~R5.
+\end{itemize}
+
+\paragraph{0.5 Assumptions.}
+\begin{itemize}
+\item \textbf{(A1) (primitives).} $N \ge 2$, $2 \le K \le N$, $T \ge K$, $p \in (0,1)$, $V > \kappa > 0$, $L_p \ge 0$, $\rho \ge 0$, $\xi \in [0,1]$.
+\item \textbf{(A2) (kernel).} The dynamic game and profile-consistent arrays of \S 0.1.
+\item \textbf{(A3) (masked rule).} The exact-integral CvD/Laplacian stage selection of \S 0.2.
+\item \textbf{(A4) (revealed rule).} The pivotality-blend reduced form of \S 0.3.
+\item \textbf{(A5) (free-riding pays).} $\xi V > V - \kappa$, i.e.\ $\xi > 1 - \kappa/V$.
+\item \textbf{(A6) (contested regime).} $K - 1 \ge \max(1,\, pN)$.
+\item \textbf{(A7) (deadline ignition).} $\xi V \cdot \bigl(1 - q_0(N-K+1)\bigr) < V - \kappa$, where $q_0(n) := \bigl(1 - (1-p)^n\bigr)/(np)$.
+\item \textbf{(A8) (rung-2 ignition, used only for the $K = 2$ part).} With $q_j := q_j(N)$ of Lemma~\ref{lem:belief} and $\widehat P(1) := 1 - (1-p)^{N-1}$:
+  \begin{itemize}
+  \item[\textbf{(C2)}] $q_0 \cdot \bigl[\, (V-\kappa+L_p)\cdot \widehat P(1) - L_p + \rho \,\bigr] + q_1 \cdot \rho \;>\; \bigl(\xi V - (V-\kappa)\bigr)\cdot(1 - q_0 - q_1)$;
+  \item[\textbf{(C3)}] $L_p \cdot q_0 + \xi V \cdot (1 - q_0 - q_1) \;\ge\; (V-\kappa)\cdot(1 - q_0)$.
+  \end{itemize}
+\end{itemize}
+A5--A6 are the \textbf{contested-regime} hypotheses (the $\theta$-threshold of part~(iv)); A7 is the \textbf{momentum-ignition} hypothesis (the $\theta$-threshold of part~(ii)). With the v9 grid map $K(\theta) = \lceil (1-\theta)\cdot N \rceil$, A6 reads: $\theta$ lies below the threshold at which the initial gap exceeds the expected per-period mover count (at the v9 calibration, where $pN = 6$ is an integer: $\theta < 1 - p = 0.4$, i.e.\ exactly $\theta \in \{0.10, 0.20, 0.30\}$ on the grid).
+
+\paragraph{0.6 Definitions.}
+\begin{itemize}
+\item \textbf{Diagonal / cone.} State $(m,h)$ with $m < K$ is \emph{on the diagonal} if $h = g(m)$, \emph{in the cone} if $h \ge g(m)$, \emph{below the diagonal} if $h < g(m)$.
+\item \textbf{DI (diagonal ignition).} The masked rule selects commit at every diagonal state: $A[K-g,\, g] = 1$ for $g = 1, \dots, K$. (Well-defined since $T \ge K$ by A1.)
+\item \textbf{Momentum bound.} $\widehat P(\gamma) := \prod_{i=1}^{\gamma} \bigl( 1 - (1-p)^{N-K+i} \bigr)$ for $\gamma \ge 0$ ($\widehat P(0) := 1$). Each factor lies in $(0,1)$, so $\widehat P$ is strictly decreasing in $\gamma$ and $\widehat P(K) > 0$.
+\item \textbf{Advantage.} $\mathrm{Adv} := \pi_{\mathrm{m}} - \pi_{\mathrm{r}}$.
+\end{itemize}
+
+\paragraph{Proposition~\ref{prop:selection} (restated).}
+{\itshape Under A1--A3 the masked game and under A1, A2, A4 the revealed game are well-defined, and no rationality parameter appears anywhere; for fixed primitives $\mathrm{Adv}$ is a single number (no $\lambda$-inversion is possible). Moreover:
+\begin{itemize}
+\item[(i)] \textup{(Momentum, conditional form.)} If DI holds, then $\pi_{\mathrm{m}} \ge \widehat P(K) > 0$.
+\item[(ii)] \textup{(Ignition at the last rung; $\theta$-threshold.)} Under A7, the masked rule commits at the deadline-pivotal diagonal state: $A[K-1,\, 1] = 1$. Since $q_0(n)$ is strictly decreasing in $n$, A7 is downward-closed in $\theta$: if it holds at threshold $K$ it holds at every $K' \ge K$, i.e.\ for every harder (lower-$\theta$) market.
+\item[(iii)] \textup{(Momentum, unconditional for $K = 2$.)} Let $K = 2$ and assume A5, A7, A8. Then DI holds --- $A[1,1] = 1$ and $A[0,2] = 1$ --- and therefore $\pi_{\mathrm{m}} \ge \widehat P(2) = \bigl(1 - (1-p)^{N-1}\bigr)\bigl(1 - (1-p)^N\bigr) > 0$. The hypothesis set is non-vacuous: $(N,K,T,p) = (10, 2, 10, 1/10)$ with the v9 payoffs $(V, \kappa, L_p, \rho, \xi) = (3, 1, 3, 1/20, 4/5)$ satisfies A1, A5, A6, A7, A8 simultaneously (exact margins in the proof, Step~5).
+\item[(iv)] \textup{(Revealed collapse in the contested regime.)} Under A1, A2, A4, A5, A6: $\pi_{\mathrm{r}} = 0$ exactly. In particular at the v9 calibration $(N,p) = (10, 3/5)$, A6 holds iff $K \ge 7$, i.e.\ iff $\theta \in \{0.10, 0.20, 0.30\}$ on the v9 grid.
+\item[(v)] \textup{(Masking advantage.)} Under the hypotheses of (iv) together with DI (or, for $K = 2$, with A7--A8 instead of DI): $\mathrm{Adv} = \pi_{\mathrm{m}} \ge \widehat P(K) > 0$ --- strictly positive on the contested regime. Globally (without A5--A6), under DI: $\mathrm{Adv} \ge \widehat P(K) - 1$. (No claim of $\mathrm{Adv} \ge 0$ outside the contested regime is made: the ground-truth computation exhibits $\mathrm{Adv} \in [-8 \cdot 10^{-4},\, 0)$ on the easy regime; see Remark~R4.)
+\end{itemize}}
+
+\noindent The diagonal-ignition conjecture (Conjecture~\ref{conj:DI}) accompanies the proposition; see Remark~R3 for its precise status and obstruction.
+
+\subsection*{Proof of Proposition~\ref{prop:selection}}
+
+Throughout, $\Delta_{\mathrm{FR}} := \xi V - (V - \kappa)$ ($> 0$ under A5) is the free-ride premium, and $q_j(n)$ is the Laplacian co-mover law of \S 0.2 at a state with $n$ uncommitted agents.
+
+\begin{lemma}[Laplacian belief identity]\label{lem:belief}
+For $0 \le j \le n-1$,
+\[
+q_j(n) = \frac{1}{np} \cdot \Pr\bigl( \operatorname{Binom}(n,p) \ge j+1 \bigr).
+\]
+Consequently $q_0(n) = \bigl(1 - (1-p)^n\bigr)/(np)$, $\sum_{j=0}^{n-1} q_j(n) = 1$, and $q_j(n)$ is strictly decreasing in $j$.
+\end{lemma}
+
+\begin{proof}
+Substituting $b = p\alpha$,
+\[
+q_j(n) = \int_0^1 \binom{n-1}{j} (p\alpha)^j (1-p\alpha)^{n-1-j}\, d\alpha
+= \frac{1}{p} \int_0^p \binom{n-1}{j} b^j (1-b)^{n-1-j}\, db.
+\]
+The integrand is $1/n$ times the $\mathrm{Beta}(j+1,\, n-j)$ density, so the integral equals $\frac{1}{np} \cdot \Pr\bigl(\mathrm{Beta}(j+1,\, n-j) \le p\bigr)$, and the Beta--Binomial identity $\Pr\bigl(\mathrm{Beta}(j+1,\, n-j) \le p\bigr) = \Pr\bigl(\operatorname{Binom}(n,p) \ge j+1\bigr)$ gives the display. The normalization follows from $\sum_{j=0}^{n-1} \Pr\bigl(\operatorname{Binom}(n,p) \ge j+1\bigr) = \mathbb{E}\bigl[\operatorname{Binom}(n,p)\bigr] = np$; monotonicity in $j$ is monotonicity of the Binomial upper tail; $q_0$ follows from $\Pr\bigl(\operatorname{Binom}(n,p) \ge 1\bigr) = 1 - (1-p)^n$.
+\end{proof}
+
+\noindent\emph{(All stage quantities below are therefore finite rational expressions in the primitives when $p$ is rational; the instance margins in Step~5 are evaluated in exact arithmetic.)}
+
+\begin{lemma}[$q_0$ monotonicity --- for part (ii)'s threshold form]\label{lem:q0mono}
+$q_0(n)$ is strictly decreasing in $n$.
+\end{lemma}
+
+\begin{proof}
+With $x := 1-p \in (0,1)$,
+\[
+q_0(n) = \frac{1 - x^n}{np} = \frac{1-x}{p} \cdot \frac{1}{n} \sum_{i=0}^{n-1} x^i,
+\]
+an average of the strictly decreasing sequence $x^i$; averages of strictly decreasing sequences strictly decrease as terms are appended.
+\end{proof}
+
+\begin{lemma}[Cone lower bound: DI $\Rightarrow$ momentum --- proves part (i)]\label{lem:cone}
+Assume A1--A3 and DI. Then for every state $(m,h)$ in the cone ($m < K$, $g(m) \le h \le T$),
+\[
+P_c[m,h] \ge \widehat P(g(m)).
+\]
+\end{lemma}
+
+\begin{proof}
+Induction on $h$.
+
+\emph{Base $h = 1$.} The only cone states have $g = 1$, i.e.\ $m = K-1$ (diagonal). DI gives $A[K-1, 1] = 1$, so by \S 0.1 with $b = p$ and $n = N-K+1$:
+\[
+P_c[K-1, 1] = \Pr\bigl(\operatorname{Binom}(n,p) \ge 1\bigr) = 1 - (1-p)^{N-K+1} = \widehat P(1).
+\]
+
+\emph{Step.} Let $h \ge 2$ and assume the claim for $h-1$. Fix a cone state $(m,h)$, $g := g(m)$, $n := n(m) = N-K+g$. Two cases by the selected action $a := A[m,h] \in \{0,1\}$:
+\begin{itemize}
+\item $a = 0$. Then $b = 0$, so $j = 0$ a.s.\ and $P_c[m,h] = P_c[m,h-1]$. By DI, $a = 0$ is impossible at a diagonal state, so $h > g$, hence $h-1 \ge g$ and $(m,h-1)$ is in the cone; the inductive hypothesis gives $P_c[m,h] \ge \widehat P(g)$.
+\item $a = 1$. Then $j \sim \operatorname{Binom}(n,p)$ and
+\[
+P_c[m,h] = \sum_j \operatorname{Binom}(n,p)(j) \cdot \bigl( \mathbf{1}\{j \ge g\} + \mathbf{1}\{j < g\} \cdot P_c[m+j,\, h-1] \bigr).
+\]
+For each $j \ge 1$ with $j < g$, the successor $(m+j,\, h-1)$ has gap $g-j \le g-1 \le h-1$, so it is in the cone and $P_c[m+j,\, h-1] \ge \widehat P(g-j) \ge \widehat P(g-1)$ (monotonicity of $\widehat P$); for $j \ge g$ the summand is $1 \ge \widehat P(g-1)$. Discarding the $j = 0$ term (bounded below by $0$),
+\[
+P_c[m,h] \;\ge\; \Pr\bigl(\operatorname{Binom}(n,p) \ge 1\bigr) \cdot \widehat P(g-1)
+\;=\; \bigl(1 - (1-p)^{N-K+g}\bigr) \cdot \widehat P(g-1) \;=\; \widehat P(g).
+\]
+\end{itemize}
+Since $T \ge K$ (A1), $(0,T)$ is in the cone and $\pi_{\mathrm{m}} = P_c[0,T] \ge \widehat P(K) > 0$.
+\end{proof}
+
+\begin{lemma}[Deadline ignition --- proves part (ii)]\label{lem:deadline}
+Assume A1--A3 and A7. Then $A[K-1,\, 1] = 1$.
+\end{lemma}
+
+\begin{proof}
+At $(K-1,\, 1)$, $n = N-K+1$, $h-1 = 0$. For every $j \ge 0$, $m+1+j = K+j \ge K$, so $U_c(j) = V - \kappa$ identically. For $j \ge 1$, $m+j \ge K$, so $U_w(j) = \xi V$; for $j = 0$, $m+j = K-1 < K$ and $h-1 = 0$, so $U_w(0) = 0$. Hence (the $-\rho$ flows cancel)
+\[
+v_c - v_w = (V - \kappa) - \bigl(1 - q_0(n)\bigr) \cdot \xi V,
+\]
+which is strictly positive iff A7 holds; the rule then selects commit. The threshold form follows from Lemma~\ref{lem:q0mono}: the left side of A7 is decreasing in $K$, so A7 propagates from $K$ to all $K' \ge K$, i.e.\ down the $\theta$-grid.
+\end{proof}
+
+\begin{lemma}[Rung-2 ignition for $K = 2$ --- with Lemma~\ref{lem:deadline}, proves part (iii)]\label{lem:rung2}
+Assume A1--A3, A5, A7, A8 and $K = 2$. Then $A[0,1] = 0$, $V_u[0,1] = -\rho$, $A[1,1] = 1$, $P_c[1,1] = \widehat P(1) = 1 - (1-p)^{N-1}$, $V_u[1,1] = V - \kappa - \rho$, and $A[0,2] = 1$.
+\end{lemma}
+
+\begin{proof}
+All five intermediate equalities are exact computations of the recursion at $h = 1$, in dependency order.
+
+\emph{State $(1,1)$ (diagonal, $g = 1$, $n = N-1$).} Lemma~\ref{lem:deadline} applies with $K = 2$ (its proof used only the structure at $(K-1,1)$): $A[1,1] = 1$ by A7. Propagation with $a = 1$, $b = p$: every commit branch clears ($m+1+j = 2+j \ge K$), so $v_c = -\rho + (V-\kappa)$ and $V_u[1,1] = V - \kappa - \rho$; and $P_c[1,1] = \Pr\bigl(\operatorname{Binom}(N-1, p) \ge 1\bigr) = 1 - (1-p)^{N-1} = \widehat P(1)$.
+
+\emph{State $(0,1)$ (below the diagonal: $g = 2 > h = 1$; $n = N$).} Stage values: $U_c(j)$: for $j \ge 1$, $m+1+j \ge 2$: $V - \kappa$; for $j = 0$, successor $(1,0)$ has $P_c[1,0] = 0$, so $U_c(0) = -L_p$. $U_w(j)$: for $j \ge 2$, $m+j \ge 2$: $\xi V$; for $j \in \{0,1\}$, $m+j < K$ and $h-1 = 0$: $0$. Hence
+\[
+v_c - v_w = -L_p \cdot q_0 + (V-\kappa)(1 - q_0) - \xi V \cdot (1 - q_0 - q_1),
+\]
+with $q_j = q_j(N)$. By \textbf{(C3)} this is $\le 0$, so the rule selects wait: $A[0,1] = 0$. Propagation with $a = 0$: $b = 0$, $j = 0$ a.s., the wait branch hits $h-1 = 0$ with $m < K$, so $V_u[0,1] = -\rho + 0 = -\rho$ (and $P_c[0,1] = P_c[0,0] = 0$).
+
+\emph{State $(0,2)$ (diagonal, $g = 2$, $n = N$).} Stage values with $h-1 = 1$, using the entries just computed:
+\begin{itemize}
+\item $j = 0$: $U_c(0) = (V-\kappa)\cdot P_c[1,1] - L_p \cdot (1 - P_c[1,1]) = (V-\kappa+L_p)\cdot \widehat P(1) - L_p$; \; $U_w(0) = V_u[0,1] = -\rho$.
+\item $j = 1$: $m+1+j = 2 \ge K$: $U_c(1) = V - \kappa$; \; $U_w(1) = V_u[1,1] = V - \kappa - \rho$.
+\item $j \ge 2$: both branches clear: $U_c - U_w = (V-\kappa) - \xi V = -\Delta_{\mathrm{FR}}$.
+\end{itemize}
+Hence
+\[
+v_c - v_w = q_0 \cdot \bigl[\, (V-\kappa+L_p)\cdot \widehat P(1) - L_p + \rho \,\bigr] + q_1 \cdot \rho - \Delta_{\mathrm{FR}} \cdot (1 - q_0 - q_1),
+\]
+which is strictly positive by \textbf{(C2)}; the rule selects commit: $A[0,2] = 1$.
+
+For $K = 2$ the diagonal is exactly $\{(1,1),\, (0,2)\}$, so DI holds, and Lemma~\ref{lem:cone} gives $\pi_{\mathrm{m}} \ge \widehat P(2)$.
+\end{proof}
+
+\begin{proof}[Step 5 (non-vacuousness of part (iii))]
+Take $(N,K,T,p) = (10, 2, 10, 1/10)$ and $(V, \kappa, L_p, \rho, \xi) = (3, 1, 3, 1/20, 4/5)$. Then, in exact rational arithmetic (all quantities are the closed forms above; Lemma~\ref{lem:belief} reduces every $q_j$ to a Binomial tail):
+\begin{itemize}
+\item A1: $2 \le 2 \le 10$, $T = 10 \ge K = 2$. \checkmark
+\item A5: $\xi V = 12/5 > V - \kappa = 2$. \checkmark
+\item A6: $K - 1 = 1 \ge \max(1,\, pN) = \max(1,1) = 1$. \checkmark
+\item A7 at $n = N-K+1 = 9$: $q_0(9) = 612579511/900000000 \approx 0.68064$; margin
+\[
+v_c - v_w = (V-\kappa) - (1 - q_0)\,\xi V = 462579511/375000000 \approx +1.2335 > 0. \;\text{\checkmark}
+\]
+\item (C3) at $n = 10$: $q_0 \approx 0.65132$, $q_1 \approx 0.26390$, $1 - q_0 - q_1 \approx 0.08478$; margin
+\[
+v_c - v_w = -73003674279/50000000000 \approx -1.4601 \le 0. \;\text{\checkmark}
+\]
+\item (C2): $\widehat P(1) = 1 - (9/10)^9 = 612579511/10^9 \approx 0.61258$;
+$(V-\kappa+L_p)\cdot \widehat P(1) - L_p + \rho = 12579511/200000000 + 1/20 \approx 0.11290$; margin
+\[
+v_c - v_w = 105633434992992089/(2 \cdot 10^{18}) \approx +0.05282 > 0. \;\text{\checkmark}
+\]
+\end{itemize}
+So DI holds and $\pi_{\mathrm{m}} \ge \widehat P(2) = (1 - 0.9^9)(1 - 0.9^{10}) = 0.39898\ldots$, while A5--A6 put the instance in the contested regime, so by part (iv) below $\pi_{\mathrm{r}} = 0$ and $\mathrm{Adv} \ge \widehat P(2) > 0$ \emph{unconditionally} for this instance class.
+\end{proof}
+
+\begin{proof}[Step 6 (revealed collapse --- proves part (iv))]
+Assume A1, A2, A4, A5, A6. At every state $(0,h)$, $h = 1, \dots, T$: the gap is $K$, $n = N$, and the pivotality weight is
+\[
+w(0,h) = \mathrm{clip}\bigl(\, 1 - (K-1)/\max(1,\, pN),\; [0,1] \,\bigr) = 0,
+\]
+since $K - 1 \ge \max(1,\, pN)$ by A6. By A5, $a_{\mathrm{inf}} = 0$. Hence the selected propensity is $a(0,h) = w \cdot a_{\mathrm{marg}} + (1-w) \cdot a_{\mathrm{inf}} = a_{\mathrm{inf}} = 0$, \emph{regardless of $a_{\mathrm{marg}}$}. Propagation with $b = p \cdot 0 = 0$ gives $j = 0$ a.s., so $P_c[0,h] = P_c[0,h-1]$ for every $h \ge 1$, and $P_c[0,0] = 0$ (since $K \ge 1$). By induction $\pi_{\mathrm{r}} = P_c[0,T] = 0$ exactly. (States with $m \ge 1$ never enter the computation of $P_c[0,\cdot]$ because the transition from $m = 0$ is degenerate at $j = 0$.)
+\end{proof}
+
+\noindent\emph{Interpretation, exactly as claimed: under A6 the initial gap exceeds the expected mover count, the pivotality weight classifies every mover as inframarginal, revelation of that inframarginal status triggers the free-ride action ($a_{\mathrm{inf}} = 0$, optimal because $\xi V > V - \kappa$ by A5), and clearing collapses to zero from the start --- a volunteer's dilemma detonated by pivotality information.}
+
+\begin{proof}[Step 7 (advantage --- proves part (v))]
+On the contested regime (A5, A6), part (iv) gives $\pi_{\mathrm{r}} = 0$, so $\mathrm{Adv} = \pi_{\mathrm{m}}$. Under DI (or under A7--A8 when $K = 2$), Lemma~\ref{lem:cone} (resp.\ Lemma~\ref{lem:rung2}) gives $\pi_{\mathrm{m}} \ge \widehat P(K) > 0$, hence $\mathrm{Adv} \ge \widehat P(K) > 0$. Globally, $\pi_{\mathrm{r}} \le 1$ always, so under DI $\mathrm{Adv} \ge \widehat P(K) - 1$. $\lambda$-freeness and no-inversion are definitional: no object in \S 0.1--\S 0.3 contains a rationality parameter, and for fixed primitives $\mathrm{Adv}$ is one number, so there is no parameter along which it could invert (contrast v7 S1's logit, which inverted at high $\lambda$).
+\end{proof}
+
+\subsection*{Remarks}
+
+\begin{remark}[R1: what was restricted relative to the numerics --- masked side]
+The proposition idealizes the script's Laplacian quadrature (equal-weight 51-point grid on $[0,1]$, \texttt{laplacian\_vals}) to the exact integral; Lemma~\ref{lem:belief} makes every stage quantity closed-form. The script's rule is an equal-weight, endpoint-inclusive 51-point average, whose generic error is $O(1/n_a)$ (a first-order average, not a higher-order rule). Against the $O(10^{-1})$ stage margins at the lemma-relevant states this is harmless, but it is not action-invariant everywhere: at the calibration the idealization flips the selected action at four above-diagonal cone cells where the stage margin is small on at least one side --- $\theta = 0.20$, $(m,h) = (4,9)$ (quadrature $+0.01259$ commit vs exact $-0.00036$ wait) and $(5,8)$ ($-0.00120$ wait vs $+0.00024$ commit); $\theta = 0.30$, $(3,5)$ ($-0.00118$ wait vs $+0.00010$ commit); $\theta = 0.50$, $(2,9)$ ($-0.00179$ wait vs $+0.00106$ commit). The only outcome-level effect is at $\theta = 0.20$: $\pi_{\mathrm{m}} = 0.9894$ (script) vs $0.9890$ (exact rule), a gap $\le 4 \cdot 10^{-4}$. All lemma-verified actions --- every diagonal rung, every below-diagonal wait, and the $K = 2$ instance of Step~5 --- and DI itself are identical under both rules, so no proved claim is affected. The masked \emph{policy} is genuinely not ``all-commit'': the ground-truth tables show commit on and above the just-in-time diagonal $h = g$ at large gaps, free-riding above the diagonal at small gaps, and wait below the diagonal. The proof is engineered around this: Lemma~\ref{lem:cone} needs \emph{only} diagonal ignition (DI) and is agnostic about every off-diagonal action --- that is what makes the conditional momentum theorem clean.
+\end{remark}
+
+\begin{remark}[R2: what was restricted --- revealed side]
+Part (iv) is a theorem about the v7/v9 \emph{reduced-form} revealed game: pivotality revelation is operationalized by the deterministic weight $w(m,h)$ blending the pivotal and inframarginal actions, not derived as the Bayesian equilibrium of an extensive form in which movers observe their decisiveness. The collapse proof is exact for that reduced form (and matches the script to all printed digits: $\pi_{\mathrm{r}} = 0.0000$ at $\theta \in \{0.10, 0.20, 0.30\}$). Deriving the same collapse from a fully specified revealed extensive form is open (it is the same gap v7 \S 9 flagged; S10 inherits it deliberately, changing only the selection rule).
+\end{remark}
+
+\begin{remark}[R3: the remaining gap --- DI at general $K$ is a conjecture]
+DI is \emph{proven} at the last rung for every $K$ satisfying A7 (Lemma~\ref{lem:deadline}: at the v9 calibration the exact margins are $+0.5744$, $+0.8480$, $+1.2800$ for $K = 7, 8, 9$, and positive down to $K = 3$), and at both rungs for $K = 2$ (Lemma~\ref{lem:rung2}). At deeper rungs ($g \ge 2$, $K \ge 3$) DI is the diagonal-ignition conjecture (Conjecture~\ref{conj:DI}): verified pointwise at all seven grid $\theta$'s (the ground-truth solver returns $A[K-g,\, g] = 1$ for every rung at every grid point, and all-wait below the diagonal), but not proven. The precise obstruction: at a diagonal state the wait branch with $j \ge 1$ co-movers lands on-cone, where the only easy bound on the uncommitted value is $V_u \le \xi V$; commit beats that crude bound only via the $j = 0$ (pivotal) Laplacian mass $q_0 \approx 1/(np)$, and the resulting sufficient condition fails at the calibration even though the exact inequality holds with ample margin: at the deepest rung ($(m,h) = (0,7)$, $\theta = 0.30$) the diagonal stage margin $v_c - v_w$ is $+0.417$ under the exact-integral rule of A3 ($+0.432$ under the script's quadrature), and the shallower $\theta = 0.30$ rungs are larger still (up to $+0.574$ at $g = 1$). Closing it needs $V_u(\text{on-cone}) \le \xi V \cdot P_c + o(1 - P_c)$ together with gap-indexed momentum bounds --- i.e.\ a simultaneous induction on (DI, below-diagonal freeze, on-cone value bounds). A theorem plus this labeled conjecture is the deliverable; we do not pretend the induction closes.
+\end{remark}
+
+\begin{remark}[R4: mapping to the numerical anchors; correction to the ``$\ge 0$ everywhere'' claim]
+Ground truth (\texttt{v9\_selection\_lambdafree.py}, \S 1 table), against the proposition's quantities, with $K(\theta) = \lceil (1-\theta) N \rceil$:
+
+\begin{center}
+\begin{tabular}{ccccccc}
+\hline
+$\theta$ & $K$ & A6 (contested)? & $\widehat P(K)$ (proved bound under DI) & script $\pi_{\mathrm{m}}$ & script $\pi_{\mathrm{r}}$ & script $\mathrm{Adv}$ \\
+\hline
+$0.10$ & $9$ & yes & $0.7532$ & $0.9906$ & $0.0000$ & $+0.9906$ \\
+$0.20$ & $8$ & yes & $0.8966$ & $0.9894$ & $0.0000$ & $+0.9894$ \\
+$0.30$ & $7$ & yes & $0.9579$ & $0.9924$ & $0.0000$ & $+0.9924$ \\
+$0.40$ & $6$ & no  & $0.9831$ & $0.9978$ & $0.9986$ & $-0.0008$ \\
+$0.50$ & $5$ & no  & $0.9933$ & $0.9995$ & $1.0000$ & $-0.0005$ \\
+$0.60$ & $4$ & no  & $0.9973$ & $0.9999$ & $1.0000$ & $-0.0001$ \\
+$0.75$ & $3$ & no  & $0.9990$ & $0.9999$ & $1.0000$ & $-0.0001$ \\
+\hline
+\end{tabular}
+\end{center}
+
+The anchors map as: ``$\pi_{\mathrm{m}} \approx 0.99$ at every $\theta$'' $=$ DI $+$ Lemma~\ref{lem:cone} (the bound $\widehat P(K)$ is a true but conservative floor; the slack is the $j = 0$ branch discarded in the induction and the above-diagonal commits the bound ignores); ``advantage $+0.99$ at $\theta \in \{0.10, 0.20, 0.30\}$'' $=$ part (v) with part (iv)'s exact zero; ``$|\mathrm{Adv}| < 0.01$ elsewhere'' $=$ the global bound $\mathrm{Adv} \ge \widehat P(K) - 1 \in [-0.017,\, -0.001]$ plus $\pi_{\mathrm{r}} \le 1$. \textbf{Correction:} the task-statement form ``advantage $\ge 0$ everywhere'' is \emph{falsified} by the ground truth --- the easy-regime advantage is slightly negative ($-8 \cdot 10^{-4}$ at $\theta = 0.40$). The correct $\lambda$-free claim, which this proposition states and the script verifies, is: \emph{strictly positive on the contested regime; bounded below by $-(1 - \widehat P(K))$ (numerically $\le 10^{-3}$ in magnitude, a tie) elsewhere; no inversion anywhere because there is no parameter to invert in.} The table quotes the script's 51-point-quadrature numbers, while the propositions are stated for the exact-integral rule of A3; the only entry that differs between the two rules is $\pi_{\mathrm{m}}$ at $\theta = 0.20$ ($0.9894$ quadrature vs $0.9890$ exact), a $\le 4 \cdot 10^{-4}$ discrepancy with no effect on any proved claim (Remark~R1).
+\end{remark}
+
+\begin{remark}[R5: FMP license, scope]
+What FMP \S 6.4 supplies is the \emph{formula}: in symmetric two-action many-player games the noise-independent global-game selection is the action preferred under a uniform belief over the opponents' aggregate --- and (per the verified note \texttt{notes/frankelmorrispauzner2003equilibrium.md}) own-action quasiconcavity is vacuous here (two actions) while the LP-maximizer characterization rests on strategic complementarities (FMP Thm~3 shows noise-\emph{dependence} can arise outside the licensed class). Our stage games violate global complementarities at exactly the states that drive the result (diagonal states are volunteer's dilemmas --- $U_c - U_w$ \emph{decreasing} in co-movers). So the citation discipline is: FMP \S 6.4 licenses the Laplacian criterion as the noise-independent selection \emph{where complements hold}; at substitutes states the same criterion is adopted as the definition of stagewise risk dominance (the CvD vanishing-noise belief routed through the $p$-consistent kernel, v9.S10.2), and its robustness there is evidenced --- not proven --- by the agreement of the independent potential-maximizer refinement (\texttt{v9\_verify\_s10.py}, Tables A--C) on what the two refinements share: the contested-regime split (masking advantage $\approx +0.99$ at $\theta \le 0.30$) and the exact revealed collapse ($\pi_{\mathrm{r}} = 0$ there). The easy regime is not a tie under the potential-maximizer: Table~A shows $\mathrm{adv}_{\mathrm{POT}} = +0.033$ at $\theta = 0.40$ and $-0.064$ (revealed-favoring) at $\theta = 0.75$. Anyone citing P2 should cite FMP for the criterion's pedigree, not as a theorem covering every stage game here.
+\end{remark}
+
+\begin{remark}[R6: other deliberate restrictions]
+(a) $T \ge K$ (A1) is needed for $(0,T)$ to be in the cone; the v9 calibration has $T = 10 \ge K \le 9$. (b) Ties select wait (script convention). Under bare A8 this convention is load-bearing: (C3) is a weak inequality, and Lemma~\ref{lem:rung2}'s $A[0,1] = 0$ invokes ties $\to$ wait in the equality case of (C3). At the Step-5 instance the inequality is strict (margin $-1.4601$), so the convention does no work there; every other proved selection is strict. (c) The per-period cost $\rho$ enters both stage values and cancels in every comparison; it matters only through continuation values, where Lemma~\ref{lem:rung2} tracks it exactly. (d) The finite-$N$ qualifier of v7 \S 2 carries verbatim: nothing here is a large-$N$ statement, and $\widehat P(K)$ does not survive $N \to \infty$ at fixed $K/N$ in any uniform way --- the masking advantage remains a finite-$N$, contested-regime object made $\lambda$-free, exactly as v9 \S 2 prices it.
+\end{remark}

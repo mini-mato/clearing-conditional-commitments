@@ -1,0 +1,148 @@
+% ---------------------------------------------------------------------------
+% P1-statement.tex --- formal statement of Proposition \ref{prop:band}
+% (interior masking band in consensus integrity). Proof: appendix/P1-proof.tex.
+% Converted from docs/propositions-workdir/P1-draft.md (content frozen;
+% notation renames only: kappa -> eta, theta -> r per the paper's canon).
+% ---------------------------------------------------------------------------
+
+The platform chooses a disclosure granularity $k \in [0,1]$ ($k = 1$ full disclosure,
+$k = 0$ full masking). A coalition is good with probability $qc$ and bad with
+probability $1 - qc$, where $q \in (0,1]$ is authentication accuracy and $c \in (0,1)$
+is consensus integrity. A good coalition has robustness $r_g \sim F_c$ on $[0,1]$ and
+delivers surplus $V > 0$ unless it unravels, which occurs iff $r_g < \hat r(k)$, where
+$\hat r(k)$ is the strategic activation cutoff induced by disclosure level $k$; a bad
+coalition imposes loss $L > 0$ unless screened, which happens with probability $s(k)$.
+Welfare is
+\begin{equation}
+W(k; q, c) \;=\; qcV\bigl(1 - F_c(\tau k)\bigr) \;-\; (1 - qc)\,L\,(1 - k).
+\tag{W}\label{eq:Wband}
+\end{equation}
+Let $K^*(c) := \operatorname*{arg\,max}_{k \in [0,1]} W(k; q, c)$ (the dependence on
+$q$ is suppressed except in part~(e)). We write ``full disclosure is uniquely optimal
+at $c$'' for $K^*(c) = \{1\}$ and ``masking is optimal at $c$'' for $1 \notin K^*(c)$.
+Define the \emph{masking set}
+\[
+M \;:=\; \{\, c \in (0,1) : 1 \notin K^*(c) \,\},
+\]
+and the \emph{marginal-balance function} (minus the right-hand slope of $W$ at $k = 1$)
+\begin{equation}
+\varphi(c) \;:=\; qcV\tau f_c(\tau) \;-\; (1 - qc)\,L.
+\tag{$\varphi$}\label{eq:phi}
+\end{equation}
+$\varphi(c) > 0$ says: at full disclosure, the marginal unraveling loss
+$qcV\tau f_c(\tau)$ exceeds the marginal screening gain $(1 - qc)L$.
+
+\begin{assumption}\label{ass:band}
+\leavevmode
+\begin{itemize}
+\item[\textbf{(A1)}] \textbf{(Payoffs.)} $V, L > 0$, $\tau \in (0,1)$, $q \in (0,1]$,
+  $c \in (0,1)$; welfare is \eqref{eq:Wband}.
+\item[\textbf{(A2)}] \textbf{(Linear channels --- restriction.)} $\hat r(k) = \tau k$,
+  $s(k) = k$, hence the unraveling risk is $\rho(k,c) = F_c(\tau k)$. This is exactly
+  the specification of the numerical ground-truth scripts \texttt{v3.py}~/
+  \texttt{v3\_shape.py}.
+\item[\textbf{(A3)}] \textbf{(Family regularity.)} For each $c \in (0,1)$, $F_c$ is a
+  CDF on $[0,1]$ with density $f_c$ strictly positive and continuous on $(0,1)$, and
+  $(r, c) \mapsto f_c(r)$ is continuous on $(0,1) \times (0,1)$.
+\item[\textbf{(A4)}] \textbf{(Fragile-end thinness at the cutoff.)} There exists
+  $\bar k \in (0,1)$ with
+  \[
+  \lim_{c \to 0^+} \; c \, \sup_{r \in [\tau\bar k,\, \tau]} f_c(r) \;=\; 0.
+  \]
+  (At very low integrity, the robustness density of good coalitions carries vanishing
+  $c$-weighted mass near the transparency cutoff $\tau$.)
+\item[\textbf{(A5)}] \textbf{(Robust-end thinness below the cutoff.)}
+  {\sloppy
+  $\lim_{c \to 1^-} S(c) = 0$, where $S(c) := \sup_{r \in (0,\tau]} f_c(r)$, and
+  \textbf{either} (i) $q < 1$, \textbf{or} (ii)
+  \[
+  \limsup_{c \to 1^-} \; \frac{cV\tau S(c)}{(1 - c)L} \;<\; 1.
+  \]
+  (At very high integrity, good coalitions are too robust to unravel: the density on
+  $[0, \tau]$ vanishes --- fast enough, relative to $1 - c$, if $q = 1$.)\par}
+\item[\textbf{(A6)}] \textbf{(Interior bite --- non-vacuity.)} There exists
+  $c_m \in (0,1)$ with $\varphi(c_m) > 0$, i.e.
+  \[
+  q\, c_m V \tau f_{c_m}(\tau) \;>\; (1 - q c_m)\, L.
+  \]
+\item[\textbf{(A7)}] \textbf{(Beta specialization, for parts (d).)}
+  $F_c = \mathrm{Beta}\bigl(c\eta, (1-c)\eta\bigr)$ on $[0,1]$ with fixed concentration
+  $\eta > 2$ (mean $c$; the family of v2/v3 and of \texttt{v3\_shape.py}). Define
+  \[
+  \bar c \;:=\; \frac{1 + \tau(\eta - 2)}{\eta} \;\in\; \Bigl(\frac{1}{\eta},\, 1\Bigr)
+  \qquad \text{(the concavity threshold)},
+  \]
+  the smallest $c$ at which the Beta mode $(c\eta - 1)/(\eta - 2)$ reaches $\tau$.
+\end{itemize}
+\end{assumption}
+
+\begin{proposition}[Interior masking band in $c$]\label{prop:band}
+Assume A1--A3.
+\begin{itemize}
+\item[\textup{(a)}] \textup{(Existence.)} For every $c \in (0,1)$, $W(\cdot\,; c)$ is
+continuous on $[0,1]$ and $K^*(c) \neq \emptyset$.
+\end{itemize}
+Assume in addition A4--A6. Then:
+\begin{itemize}
+\item[\textup{(b)}] \textup{(Full disclosure at both extremes.)} There exist
+$0 < c_1 \le c_2 < 1$ such that $K^*(c) = \{1\}$ for every $c \in (0, c_1)$ and every
+$c \in (c_2, 1)$.
+\item[\textup{(c)}] \textup{(Masking in the middle; the band.)} $1 \notin K^*(c_m)$, so
+$M \neq \emptyset$. Consequently
+\[
+c_{\mathrm{lo}} := \inf M \quad\text{and}\quad c_{\mathrm{hi}} := \sup M
+\]
+satisfy $0 < c_1 \le c_{\mathrm{lo}} \le c_m \le c_{\mathrm{hi}} \le c_2 < 1$; full
+disclosure is optimal ($1 \in K^*(c)$) for every
+$c \in (0, c_{\mathrm{lo}}) \cup (c_{\mathrm{hi}}, 1)$, uniquely so on
+$(0, c_1) \cup (c_2, 1)$; and masking is strictly optimal at
+$c_m \in [c_{\mathrm{lo}}, c_{\mathrm{hi}}]$. In particular the masking region is
+contained in a band strictly interior to $(0,1)$ and is nonempty.
+\end{itemize}
+Assume in addition A7. Then:
+\begin{itemize}
+\item[\textup{(d)}] \textup{(Sharp upper threshold and FOC characterization on the
+upper shoulder.)}
+\begin{itemize}
+\item[\textup{(d1)}] $c \mapsto \log\bigl[\, qcV\tau f_c(\tau) \,/\, ((1-qc)L) \,\bigr]$
+is strictly concave on $(0,1)$; hence $\{c : \varphi(c) > 0\}$ is an open interval
+$(c_-, c_+)$, nonempty by A6, with $c_- < c_m < c_+$.
+\item[\textup{(d2)}] For every $c \in [\bar c, 1)$, $W(\cdot\,; c)$ is strictly concave
+on $[0,1]$, $K^*(c)$ is a singleton $\{k^*(c)\}$, $k^*(c) > 0$, and
+\[
+k^*(c) < 1 \quad\iff\quad \varphi(c) > 0;
+\]
+when $\varphi(c) > 0$, $k^*(c) \in (0,1)$ is the unique solution of the first-order
+condition
+\[
+qcV\tau f_c(\tau k^*) = (1 - qc)L
+\qquad \text{(marginal unraveling loss $=$ marginal screening gain).}
+\]
+\item[\textup{(d3)}] If moreover $c_+ > \bar c$ (true at the script parameters
+$(V, L, \tau, \eta) = (1, 1.2, 0.7, 8)$ with $q = 0.95$; Remark~\ref{rem:anchors}),
+then $c_{\mathrm{hi}} = c_+ < 1$, the interval
+$\bigl( \max(\bar c, c_-),\, c_+ \bigr) \subseteq M$, $k^*$ is continuous on
+$\bigl( \max(\bar c, c_-),\, c_+ \bigr)$, and $k^*(c) \to 1$ as
+$c \uparrow c_{\mathrm{hi}}$: the upper transition is a continuous closing of the band,
+characterized exactly by $\varphi(c_{\mathrm{hi}}) = 0$.
+\end{itemize}
+\item[\textup{(e)}] \textup{(Comparative statics in $q$; needs only A1--A3.)} For
+$q < q' \le 1$:
+\begin{itemize}
+\item $M(q) \subseteq M(q')$: the masking set expands with authentication accuracy;
+hence, whenever $M(q) \neq \emptyset$ (so that the thresholds $c_{\mathrm{lo}}(q),
+c_{\mathrm{hi}}(q)$ are defined --- and then $M(q') \neq \emptyset$ too, by the
+inclusion), $c_{\mathrm{lo}}(\cdot)$ is non-increasing and $c_{\mathrm{hi}}(\cdot)$
+non-decreasing in $q$. (When $M(q) = \emptyset$ the thresholds are undefined ---
+$\inf \emptyset$~/ $\sup \emptyset$ --- and the clause is vacuous.)
+\item $\max K^*(c; q') \le \min K^*(c; q)$ for every $c$: every optimal disclosure
+level under $q'$ is weakly below every optimal level under $q$. In particular, wherever
+$K^*$ is a singleton, $k^*(c; q)$ is non-increasing in $q$ (more masking as
+authenticity rises).
+\end{itemize}
+\end{itemize}
+\end{proposition}
+
+\begin{conjecture}[Connectedness of $M$]\label{conj:connected}
+$M$ is an interval, i.e.\ $M = (c_{\mathrm{lo}}, c_{\mathrm{hi}})$ exactly.
+\end{conjecture}
